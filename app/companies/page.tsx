@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Company, Product, initialCompanies } from '../models/orderTypes';
+import { Company, initialCompanies } from '../models/orderTypes';
 import { getCompanies, addCompany, updateCompany, deleteCompany, addProduct, updateProduct, deleteProduct } from '../lib/supabase';
 
 // Supabase에서 가져온 회사 및 제품 타입 정의
