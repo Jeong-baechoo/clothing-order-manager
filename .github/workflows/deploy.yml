@@ -28,27 +28,37 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
         with:
-          static_site_generator: next
-      - name: Install dependencies
+          static_site_generator: next      - name: Install dependencies
         run: npm ci
       - name: Build with Next.js
-        run: npm run build
-      - name: List build output
+        run: |
+          echo "Starting Next.js build..."
+          npm run build
+          echo "Build completed with exit code: $?"- name: List build output
         run: |
           echo "Current directory contents:"
           ls -la
-          echo "Out directory contents:"
-          ls -la out/ || echo "Out directory does not exist"
+          echo ""
+          echo "Checking for build outputs:"
+          ls -la out/ 2>/dev/null && echo "✓ out directory exists" || echo "✗ out directory missing"
+          ls -la .next/ 2>/dev/null && echo "✓ .next directory exists" || echo "✗ .next directory missing"
+          echo ""
+          echo "Build directory structure:"
+          find . -maxdepth 2 -type d -name "out" -o -name ".next" -o -name "build" -o -name "dist" | grep -v node_modules | head -10
       - name: Verify out directory exists
         run: |
           if [ ! -d "./out" ]; then
             echo "Error: ./out directory does not exist after build"
-            echo "Available directories:"
-            find . -type d -name "out" -o -name ".next" -o -name "dist" -o -name "build"
+            echo "Next.js build may have failed or output to wrong directory"
+            echo "Checking package.json scripts:"
+            cat package.json | grep -A 5 -B 5 "scripts"
+            echo ""
+            echo "Checking next.config.ts:"
+            cat next.config.ts
             exit 1
           else
             echo "✓ ./out directory exists"
-            echo "Contents of ./out:"
+            echo "Contents of ./out (first 10 files):"
             find ./out -type f | head -10
           fi
       - name: Upload artifact
