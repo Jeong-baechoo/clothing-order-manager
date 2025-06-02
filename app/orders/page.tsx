@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import OrderDetailView from '../components/OrderDetailView';
 import OrderStatistics from '../components/OrderStatistics';
 import OrderExport from '../components/OrderExport';
@@ -9,7 +9,7 @@ import OrderForm from '../components/OrderForm';
 import { Order, initialOrders, getStatusColor, orderStatusMap } from '../models/orderTypes';
 
 const OrdersPage: React.FC = () => {
-    const [orders, setOrders] = useState<Order[]>(initialOrders);
+    const [orders, setOrders] = useState<Order[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedStatus, setSelectedStatus] = useState<string>('all');
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -20,6 +20,24 @@ const OrdersPage: React.FC = () => {
     // 삭제 확인 대화상자 상태
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
+
+    // 초기 데이터 로드 및 localStorage 처리
+    useEffect(() => {
+        const savedOrders = localStorage.getItem('orders');
+        if (savedOrders) {
+            setOrders(JSON.parse(savedOrders));
+        } else {
+            setOrders(initialOrders);
+            localStorage.setItem('orders', JSON.stringify(initialOrders));
+        }
+    }, []);
+
+    // orders 상태가 변경될 때마다 localStorage 업데이트
+    useEffect(() => {
+        if (orders.length > 0) {
+            localStorage.setItem('orders', JSON.stringify(orders));
+        }
+    }, [orders]);
 
     // 주문 검색 및 필터링
     const filteredOrders = orders.filter((order) => {
@@ -229,23 +247,18 @@ const OrdersPage: React.FC = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                             {order.customerName}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
-                                            <div className="flex flex-col">
-                                                <span className="font-medium">{order.items.length}개 항목</span>
-                                                <span className="text-xs truncate max-w-xs">
-                                                    {order.items.map(item => item.product).join(', ')}
-                                                </span>
-                                            </div>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                            {order.items.map((item) => (
+                                                <div key={item.id} className="mb-1">
+                                                    {item.product} ({item.color}, {item.size}) x {item.quantity}
+                                                </div>
+                                            ))}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                             {order.totalPrice.toLocaleString()}원
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span
-                                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                                                    order.status
-                                                )}`}
-                                            >
+                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}>
                                                 {orderStatusMap[order.status]}
                                             </span>
                                         </td>
@@ -256,28 +269,26 @@ const OrdersPage: React.FC = () => {
                                             <div className="flex space-x-2">
                                                 <button
                                                     onClick={() => setSelectedOrderId(order.id)}
-                                                    className="text-indigo-600 hover:text-indigo-900"
-                                                    title="상세 보기"
+                                                    className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                                                 >
-                                                    보기
+                                                    상세보기
                                                 </button>
                                                 <button
                                                     onClick={() => openEditForm(order)}
-                                                    className="text-blue-600 hover:text-blue-900"
-                                                    title="주문 편집"
+                                                    className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                                 >
                                                     편집
                                                 </button>
+                                                <button
+                                                    onClick={() => openDeleteDialog(order.id)}
+                                                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                                >
+                                                    삭제
+                                                </button>
                                                 <select
                                                     value={order.status}
-                                                    onChange={(e) =>
-                                                        handleStatusChange(
-                                                            order.id,
-                                                            e.target.value as Order['status']
-                                                        )
-                                                    }
-                                                    className="text-xs border border-gray-300 rounded-md"
-                                                    title="상태 변경"
+                                                    onChange={(e) => handleStatusChange(order.id, e.target.value as Order['status'])}
+                                                    className="text-sm border-gray-300 rounded-md"
                                                 >
                                                     <option value="pending">대기중</option>
                                                     <option value="processing">처리중</option>
@@ -285,24 +296,14 @@ const OrdersPage: React.FC = () => {
                                                     <option value="delivered">배송완료</option>
                                                     <option value="cancelled">취소됨</option>
                                                 </select>
-                                                <button
-                                                    onClick={() => openDeleteDialog(order.id)}
-                                                    className="text-red-600 hover:text-red-900"
-                                                    title="주문 삭제"
-                                                >
-                                                    삭제
-                                                </button>
                                             </div>
                                         </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td
-                                        colSpan={7}
-                                        className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-300"
-                                    >
-                                        표시할 주문이 없습니다.
+                                    <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-300">
+                                        주문 정보가 없습니다
                                     </td>
                                 </tr>
                             )}
