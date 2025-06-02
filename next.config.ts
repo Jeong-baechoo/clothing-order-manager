@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: [],
   reactStrictMode: true,
   output: 'export',
+  trailingSlash: true,
   images: {
     unoptimized: true,
   },
