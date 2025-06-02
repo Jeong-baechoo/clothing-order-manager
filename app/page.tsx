@@ -2,46 +2,92 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-      // CAELUM 투명 로고를 배경으로 사용
-      <div
-          className="min-h-screen bg-no-repeat bg-center relative bg-gray-50"
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        {/* 배경 로고 - z-index 수정 */}
+        <div
+          className="fixed inset-0 pointer-events-none"
           style={{
-            backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)), url('/images/caelum-logo-transparent.png')`,
-            backgroundSize: '800px auto',
-            backgroundPosition: 'center'
+            backgroundImage: `url('/images/caelum-logo-transparent.png')`,
+            backgroundSize: '600px auto',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            opacity: 0.2,
+            zIndex: 0
           }}
-      >
-        <div className="max-w-4xl mx-auto py-10 px-4">
-          <h1 className="text-3xl font-bold mb-6 text-gray-800">의류 주문 관리 시스템</h1>
+        />
 
-          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-lg rounded-lg p-6 mb-8 border border-gray-200">
-            <h2 className="text-xl font-semibold mb-4">시스템 개요</h2>
-            <p className="mb-4">
-              이 시스템은 의류 주문을 효율적으로 관리하기 위한 도구입니다. 주문 조회, 추가, 수정 및 삭제 기능을 제공합니다.
-            </p>
-            <div className="mt-6">
-              <Link
-                  href="/orders"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-              >
-                주문 관리 페이지로 이동
-              </Link>
-            </div>
+        {/* 메인 컨텐츠 */}
+        <div className="relative max-w-4xl mx-auto py-12 px-4">
+          {/* 헤더 */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">CAELUM 주문 관리</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">의류 주문 관리 시스템</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-lg rounded-lg p-6 border border-gray-200">
-              <h2 className="text-lg font-semibold mb-3">빠른 주문 검색</h2>
-              <p className="text-gray-600 dark:text-gray-300">
-                주문 ID, 고객 이름 또는 상품으로 주문을 빠르게 찾을 수 있습니다.
-              </p>
-            </div>
+          {/* 빠른 액세스 버튼들 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <Link
+              href="/orders"
+              className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">주문 목록</h2>
+                  <p className="text-gray-600 dark:text-gray-400">전체 주문 조회 및 관리</p>
+                </div>
+                <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+            </Link>
 
-            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-lg rounded-lg p-6 border border-gray-200">
-              <h2 className="text-lg font-semibold mb-3">주문 상태 관리</h2>
-              <p className="text-gray-600 dark:text-gray-300">
-                주문 상태를 실시간으로 업데이트하고 관리할 수 있습니다.
-              </p>
+            <Link
+              href="/orders/new"
+              className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">새 주문 추가</h2>
+                  <p className="text-gray-600 dark:text-gray-400">신규 주문 등록</p>
+                </div>
+                <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+            </Link>
+          </div>
+
+          {/* 주요 기능 안내 */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">주요 기능</h3>
+            <div className="space-y-3">
+              <div className="flex items-start">
+                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <div>
+                  <span className="font-medium text-gray-800 dark:text-gray-100">주문 검색:</span>
+                  <span className="text-gray-600 dark:text-gray-400 ml-2">주문 ID, 고객명, 상품명으로 검색</span>
+                </div>
+              </div>
+              <div className="flex items-start">
+                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <div>
+                  <span className="font-medium text-gray-800 dark:text-gray-100">상태 관리:</span>
+                  <span className="text-gray-600 dark:text-gray-400 ml-2">주문 상태 실시간 업데이트</span>
+                </div>
+              </div>
+              <div className="flex items-start">
+                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <div>
+                  <span className="font-medium text-gray-800 dark:text-gray-100">일괄 처리:</span>
+                  <span className="text-gray-600 dark:text-gray-400 ml-2">여러 주문 동시 수정 가능</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
