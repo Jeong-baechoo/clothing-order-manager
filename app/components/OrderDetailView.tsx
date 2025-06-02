@@ -1,8 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Order, OrderItem, initialOrders, getStatusColor } from '../models/orderTypes';
+import { initialOrders, getStatusColor } from '../models/orderTypes';
 
 interface OrderDetailProps {
     orderId: string;
@@ -10,8 +8,6 @@ interface OrderDetailProps {
 }
 
 export default function OrderDetailView({ orderId, onClose }: OrderDetailProps) {
-    const router = useRouter();
-    const [loading, setLoading] = useState(false);
 
     // 실제 구현에서는 여기서 API 호출로 주문 정보를 가져올 수 있습니다
     // 지금은 샘플 데이터에서 orderId로 찾아서 사용합니다

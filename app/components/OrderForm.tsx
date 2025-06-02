@@ -63,11 +63,9 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
             ...prev,
             items: updatedItems
         }));
-    };
-
-    // 상품 항목 추가 핸들러
+    };    // 상품 항목 추가 핸들러
     const handleAddItem = () => {
-        const newItem: Partial<OrderItem> = {
+        const newItem: OrderItem = {
             id: `item-${Date.now()}-${(orderData.items?.length || 0) + 1}`,
             product: '',
             quantity: 1,

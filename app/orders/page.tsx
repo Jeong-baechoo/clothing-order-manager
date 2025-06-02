@@ -1,13 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import OrderDetailView from '../components/OrderDetailView';
 import OrderStatistics from '../components/OrderStatistics';
 import OrderExport from '../components/OrderExport';
 import ConfirmDialog from '../components/ConfirmDialog';
 import OrderForm from '../components/OrderForm';
-import { Order, OrderItem, initialOrders, getStatusColor, orderStatusMap } from '../models/orderTypes';
+import { Order, initialOrders, getStatusColor, orderStatusMap } from '../models/orderTypes';
 
 const OrdersPage: React.FC = () => {
     const [orders, setOrders] = useState<Order[]>(initialOrders);

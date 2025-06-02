@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Order, OrderItem } from '../models/orderTypes';
+import { OrderItem } from '../models/orderTypes';
 import ProductManager from './ProductManager';
 
 // 사이즈 옵션 정의
