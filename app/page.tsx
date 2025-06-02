@@ -1,13 +1,28 @@
 'use client';
 
 import Link from "next/link";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import OrderFormModal from './components/OrderFormModal';
+import RelatedLinks from './components/RelatedLinks';
 import { Order } from './models/orderTypes';
 import { addOrder } from './lib/supabase';
+import { ensureRelatedLinksTable } from './lib/initRelatedLinks';
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // 관련 링크 테이블 초기화
+  useEffect(() => {
+    const initTable = async () => {
+      try {
+        await ensureRelatedLinksTable();
+      } catch (error) {
+        console.error('관련 링크 테이블 초기화 오류:', error);
+      }
+    };
+
+    initTable();
+  }, []);
 
   const handleOpenModal = () => {
     setIsModalOpen(true);
@@ -83,6 +98,9 @@ export default function Home() {
               </div>
             </button>
           </div>
+
+          {/* 관련 사이트 */}
+          <RelatedLinks />
 
           {/* 주요 기능 안내 */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">

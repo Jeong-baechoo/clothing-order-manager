@@ -297,3 +297,50 @@ export async function deleteProduct(productId) {
   return true;
 }
 
+// 관련 링크 함수들
+export async function getRelatedLinks() {
+  const { data, error } = await supabase
+    .from('related_links')
+    .select('*')
+    .order('id');
+
+  if (error) {
+    console.error('관련 링크 불러오기 오류:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function addRelatedLink(link) {
+  const { data, error } = await supabase
+    .from('related_links')
+    .insert({
+      title: link.title,
+      url: link.url,
+      description: link.description || ''
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('관련 링크 추가 오류:', error);
+    return null;
+  }
+
+  return data;
+}
+
+export async function deleteRelatedLink(linkId) {
+  const { error } = await supabase
+    .from('related_links')
+    .delete()
+    .eq('id', linkId);
+
+  if (error) {
+    console.error('관련 링크 삭제 오류:', error);
+    return false;
+  }
+
+  return true;
+}
