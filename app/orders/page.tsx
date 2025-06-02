@@ -7,6 +7,17 @@ import OrderExport from '../components/OrderExport';
 import ConfirmDialog from '../components/ConfirmDialog';
 import OrderForm from '../components/OrderForm';
 import { Order, initialOrders, getStatusColor, orderStatusMap } from '../models/orderTypes';
+import { getOrders, addOrder, updateOrder, deleteOrder, updateOrderStatus } from '../lib/supabase';
+
+// Supabase에서 가져온 주문 항목의 타입 정의
+interface SupabaseOrderItem {
+    id: string | number;
+    product: string;
+    quantity: number;
+    size: string;
+    color: string;
+    price: number;
+}
 
 const OrdersPage: React.FC = () => {
     const [orders, setOrders] = useState<Order[]>([]);
@@ -16,28 +27,56 @@ const OrdersPage: React.FC = () => {
     const [isFormVisible, setIsFormVisible] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [currentOrder, setCurrentOrder] = useState<Partial<Order> | null>(null);
+    const [loading, setLoading] = useState(true);
 
     // 삭제 확인 대화상자 상태
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
 
-    // 초기 데이터 로드 및 localStorage 처리
+    // Supabase에서 데이터 로드
     useEffect(() => {
-        const savedOrders = localStorage.getItem('orders');
-        if (savedOrders) {
-            setOrders(JSON.parse(savedOrders));
-        } else {
-            setOrders(initialOrders);
-            localStorage.setItem('orders', JSON.stringify(initialOrders));
+        async function loadOrders() {
+            setLoading(true);
+            try {
+                const ordersData = await getOrders();
+                if (ordersData.length > 0) {
+                    // Supabase에서 받은 데이터를 애플리케이션 형식으로 변환
+                    const formattedOrders = ordersData.map(order => ({
+                        id: order.id,
+                        customerName: order.customer_name,
+                        phone: order.phone,
+                        address: order.address,
+                        status: order.status,
+                        orderDate: order.order_date,
+                        paymentMethod: order.payment_method,
+                        totalPrice: order.total_price,
+                        items: order.items.map((item: SupabaseOrderItem) => ({
+                            id: `ITEM-${item.id}`,
+                            product: item.product,
+                            quantity: item.quantity,
+                            size: item.size,
+                            color: item.color,
+                            price: item.price
+                        }))
+                    }));
+                    setOrders(formattedOrders);
+                } else {
+                    // 데이터가 없으면 초기 데이터로 설정하고 Supabase에 저장
+                    setOrders(initialOrders);
+                    // 초기 데이터를 Supabase에 저장 (실제 구현 시 필요에 따라 사용)
+                    // initialOrders.forEach(order => addOrder(order));
+                }
+            } catch (error) {
+                console.error('주문 데이터 로드 중 오류 발생:', error);
+                // 오류 발생 시 초기 데이터 사용
+                setOrders(initialOrders);
+            } finally {
+                setLoading(false);
+            }
         }
-    }, []);
 
-    // orders 상태가 변경될 때마다 localStorage 업데이트
-    useEffect(() => {
-        if (orders.length > 0) {
-            localStorage.setItem('orders', JSON.stringify(orders));
-        }
-    }, [orders]);
+        loadOrders();
+    }, []);
 
     // 주문 검색 및 필터링
     const filteredOrders = orders.filter((order) => {
@@ -56,40 +95,61 @@ const OrdersPage: React.FC = () => {
     });
 
     // 새 주문 추가
-    const handleAddOrder = (orderData: Partial<Order>) => {
+    const handleAddOrder = async (orderData: Partial<Order>) => {
         const newOrder: Order = {
             id: `ORD-${String(orders.length + 1).padStart(3, '0')}`,
             orderDate: new Date().toISOString().split('T')[0],
             ...orderData,
         } as Order;
 
-        setOrders([...orders, newOrder]);
-        setIsFormVisible(false);
-        setCurrentOrder(null);
+        try {
+            await addOrder(newOrder);
+            setOrders([...orders, newOrder]);
+        } catch (error) {
+            console.error('주문 추가 중 오류 발생:', error);
+        } finally {
+            setIsFormVisible(false);
+            setCurrentOrder(null);
+        }
     };
 
     // 주문 편집
-    const handleEditOrder = (orderData: Partial<Order>) => {
+    const handleEditOrder = async (orderData: Partial<Order>) => {
         if (!currentOrder?.id) return;
 
-        setOrders(
-            orders.map((order) =>
-                order.id === currentOrder.id ? { ...order, ...orderData } as Order : order
-            )
-        );
+        try {
+            await updateOrder({
+                ...currentOrder,
+                ...orderData,
+                id: currentOrder.id
+            });
 
-        setIsFormVisible(false);
-        setIsEditMode(false);
-        setCurrentOrder(null);
+            setOrders(
+                orders.map((order) =>
+                    order.id === currentOrder.id ? { ...order, ...orderData } as Order : order
+                )
+            );
+        } catch (error) {
+            console.error('주문 편집 중 오류 발생:', error);
+        } finally {
+            setIsFormVisible(false);
+            setIsEditMode(false);
+            setCurrentOrder(null);
+        }
     };
 
     // 주문 상태 변경
-    const handleStatusChange = (id: string, newStatus: Order['status']) => {
-        setOrders(
-            orders.map((order) =>
-                order.id === id ? { ...order, status: newStatus } : order
-            )
-        );
+    const handleStatusChange = async (id: string, newStatus: Order['status']) => {
+        try {
+            await updateOrderStatus(id, newStatus);
+            setOrders(
+                orders.map((order) =>
+                    order.id === id ? { ...order, status: newStatus } : order
+                )
+            );
+        } catch (error) {
+            console.error('주문 상태 변경 중 오류 발생:', error);
+        }
     };
 
     // 주문 편집 폼 열기
@@ -106,11 +166,17 @@ const OrdersPage: React.FC = () => {
     };
 
     // 주문 삭제 확인
-    const confirmDeleteOrder = () => {
+    const confirmDeleteOrder = async () => {
         if (orderToDelete) {
-            setOrders(orders.filter((order) => order.id !== orderToDelete));
-            setIsDeleteDialogOpen(false);
-            setOrderToDelete(null);
+            try {
+                await deleteOrder(orderToDelete);
+                setOrders(orders.filter((order) => order.id !== orderToDelete));
+            } catch (error) {
+                console.error('주문 삭제 중 오류 발생:', error);
+            } finally {
+                setIsDeleteDialogOpen(false);
+                setOrderToDelete(null);
+            }
         }
     };
 
@@ -238,7 +304,13 @@ const OrdersPage: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200">
-                            {filteredOrders.length > 0 ? (
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-300">
+                                        데이터를 불러오는 중...
+                                    </td>
+                                </tr>
+                            ) : filteredOrders.length > 0 ? (
                                 filteredOrders.map((order) => (
                                     <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">

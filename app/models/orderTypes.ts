@@ -28,7 +28,6 @@ export interface OrderItem {
 export interface Order {
     id: string;
     customerName: string;
-    email: string;
     phone: string;
     address: string;
     status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
@@ -70,7 +69,6 @@ export const initialOrders: Order[] = [
     {
         id: 'ORD-001',
         customerName: '김민수',
-        email: 'minsu.kim@example.com',
         phone: '010-1234-5678',
         address: '서울시 강남구 테헤란로 123',
         status: 'delivered',
@@ -99,7 +97,6 @@ export const initialOrders: Order[] = [
     {
         id: 'ORD-002',
         customerName: '이지연',
-        email: 'jiyeon.lee@example.com',
         phone: '010-9876-5432',
         address: '서울시 서초구 방배로 456',
         status: 'processing',
@@ -120,7 +117,6 @@ export const initialOrders: Order[] = [
     {
         id: 'ORD-003',
         customerName: '박준호',
-        email: 'junho.park@example.com',
         phone: '010-5555-4444',
         address: '경기도 성남시 분당구 판교로 789',
         status: 'pending',

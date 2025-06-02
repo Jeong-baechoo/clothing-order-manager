@@ -14,7 +14,6 @@ interface OrderFormProps {
 export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = false }: OrderFormProps) {
     const [orderData, setOrderData] = useState<Partial<Order>>({
         customerName: '',
-        email: '',
         phone: '',
         address: '',
         status: 'pending',
@@ -145,17 +144,6 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                             value={orderData.customerName || ''}
                             onChange={handleChange}
                             required
-                            className="w-full p-2 border border-gray-300 rounded-md"
-                        />
-                    </div>                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            이메일
-                        </label>
-                        <input
-                            type="email"
-                            name="email"
-                            value={orderData.email || ''}
-                            onChange={handleChange}
                             className="w-full p-2 border border-gray-300 rounded-md"
                         />
                     </div>

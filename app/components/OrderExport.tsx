@@ -13,7 +13,6 @@ export default function OrderExport({ orders }: OrderExportProps) {
         const headers = [
             '주문 ID',
             '고객 이름',
-            '이메일',
             '전화번호',
             '배송 주소',
             '상품명',
@@ -37,7 +36,6 @@ export default function OrderExport({ orders }: OrderExportProps) {
                 const row = [
                     order.id,
                     order.customerName,
-                    order.email,
                     order.phone,
                     order.address,
                     item.product,

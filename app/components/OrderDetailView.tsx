@@ -1,6 +1,6 @@
 'use client';
 
-import { initialOrders, getStatusColor } from '../models/orderTypes';
+import { initialOrders } from '../models/orderTypes';
 
 interface OrderDetailProps {
     orderId: string;
@@ -42,16 +42,6 @@ export default function OrderDetailView({ orderId, onClose }: OrderDetailProps) 
                                     <span className="font-medium">주문일:</span> {orderDetail.orderDate}
                                 </p>
                                 <p>
-                                    <span className="font-medium">상태:</span>{' '}
-                                    <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(orderDetail.status)}`}>
-                                        {orderDetail.status === 'pending' && '대기중'}
-                                        {orderDetail.status === 'processing' && '처리중'}
-                                        {orderDetail.status === 'shipped' && '배송중'}
-                                        {orderDetail.status === 'delivered' && '배송완료'}
-                                        {orderDetail.status === 'cancelled' && '취소됨'}
-                                    </span>
-                                </p>
-                                <p>
                                     <span className="font-medium">결제 방법:</span> {orderDetail.paymentMethod}
                                 </p>
                                 <p>
@@ -65,9 +55,6 @@ export default function OrderDetailView({ orderId, onClose }: OrderDetailProps) 
                             <div className="space-y-2 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                                 <p>
                                     <span className="font-medium">이름:</span> {orderDetail.customerName}
-                                </p>
-                                <p>
-                                    <span className="font-medium">이메일:</span> {orderDetail.email}
                                 </p>
                                 <p>
                                     <span className="font-medium">전화번호:</span> {orderDetail.phone}
@@ -100,7 +87,7 @@ export default function OrderDetailView({ orderId, onClose }: OrderDetailProps) 
                                                 {item.product}
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                                {item.quantity}개
+                                                {item.quantity}
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                                 {item.size}
@@ -108,39 +95,35 @@ export default function OrderDetailView({ orderId, onClose }: OrderDetailProps) 
                                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                                 {item.color}
                                             </td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
+                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300">
                                                 {item.price.toLocaleString()}원
                                             </td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white text-right">
+                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white font-medium">
                                                 {(item.price * item.quantity).toLocaleString()}원
                                             </td>
                                         </tr>
                                     ))}
-                                    <tr className="bg-gray-200 dark:bg-gray-600">
-                                        <td colSpan={5} className="px-4 py-2 text-right text-sm font-bold text-gray-700 dark:text-gray-200">
-                                            총 합계:
+                                </tbody>
+                                <tfoot className="bg-gray-100 dark:bg-gray-600">
+                                    <tr>
+                                        <td colSpan={5} className="px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-white">
+                                            총 주문 금액:
                                         </td>
-                                        <td className="px-4 py-2 text-right text-sm font-bold text-gray-900 dark:text-white">
+                                        <td className="px-4 py-3 text-sm text-right font-bold text-gray-900 dark:text-white">
                                             {orderDetail.totalPrice.toLocaleString()}원
                                         </td>
                                     </tr>
-                                </tbody>
+                                </tfoot>
                             </table>
                         </div>
                     </div>
 
-                    <div className="mt-8 flex justify-end space-x-3">
+                    <div className="mt-6 flex justify-end">
                         <button
                             onClick={handlePrint}
-                            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors print:hidden"
                         >
-                            영수증 인쇄
-                        </button>
-                        <button
-                            onClick={onClose}
-                            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-                        >
-                            확인
+                            주문서 인쇄
                         </button>
                     </div>
                 </div>
