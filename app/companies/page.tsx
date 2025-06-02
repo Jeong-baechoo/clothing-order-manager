@@ -3,369 +3,534 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Company, Product, initialCompanies } from '../models/orderTypes';
+import { getCompanies, addCompany, updateCompany, deleteCompany, addProduct, updateProduct, deleteProduct } from '../lib/supabase';
+
+// Supabase에서 가져온 회사 및 제품 타입 정의
+interface SupabaseProduct {
+  id: string;
+  name: string;
+  default_price: number;
+  company_id: string;
+}
+
+interface SupabaseCompany {
+  id: string;
+  name: string;
+  products: SupabaseProduct[];
+}
 
 export default function CompaniesPage() {
-    const [companies, setCompanies] = useState<Company[]>(initialCompanies);
-    const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
-    const [isAddingCompany, setIsAddingCompany] = useState(false);
-    const [isAddingProduct, setIsAddingProduct] = useState(false);
-    const [newCompany, setNewCompany] = useState<{ name: string }>({ name: '' });
-    const [newProduct, setNewProduct] = useState<{ name: string, defaultPrice: number }>({
-        name: '',
-        defaultPrice: 0
-    });
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [isAddingCompany, setIsAddingCompany] = useState(false);
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [newCompany, setNewCompany] = useState<{ name: string }>({ name: '' });
+  const [newProduct, setNewProduct] = useState<{ name: string, defaultPrice: number }>({
+    name: '',
+    defaultPrice: 0
+  });
+  const [loading, setLoading] = useState(true);
 
-    // 로컬 스토리지에서 회사 데이터 불러오기
-    useEffect(() => {
-        const savedCompanies = localStorage.getItem('companies');
-        if (savedCompanies) {
-            try {
-                setCompanies(JSON.parse(savedCompanies));
-            } catch (e) {
-                console.error('회사 데이터 불러오기 실패:', e);
+  // Supabase에서 회사 데이터 불러오기
+  useEffect(() => {
+    async function loadCompanies() {
+      setLoading(true);
+      try {
+        const companiesData = await getCompanies();
+        if (companiesData.length > 0) {
+          // Supabase에서 받은 데이터를 애플리케이션 형식으로 변환
+          const formattedCompanies = companiesData.map((company: SupabaseCompany) => ({
+            id: company.id,
+            name: company.name,
+            products: company.products?.map((product: SupabaseProduct) => ({
+              id: product.id,
+              name: product.name,
+              defaultPrice: product.default_price
+            })) || []
+          }));
+          setCompanies(formattedCompanies);
+        } else {
+          // 데이터가 없으면 초기 데이터로 설정
+          setCompanies(initialCompanies);
+          // 필요한 경우 초기 데이터를 Supabase에 저장
+          // 주석 해제하여 사용: 처음 한 번만 실행하세요!
+          /*
+          for (const company of initialCompanies) {
+            const savedCompany = await addCompany(company);
+            if (savedCompany) {
+              for (const product of company.products) {
+                await addProduct({
+                  ...product,
+                  companyId: savedCompany.id
+                });
+              }
             }
+          }
+          */
         }
-    }, []);
+      } catch (error) {
+        console.error('회사 데이터 로드 중 오류 발생:', error);
+        // 오류 발생 시 초기 데이터 사용
+        setCompanies(initialCompanies);
+      } finally {
+        setLoading(false);
+      }
+    }
 
-    // 회사 데이터 저장
-    const saveCompanies = (updatedCompanies: Company[]) => {
-        try {
-            localStorage.setItem('companies', JSON.stringify(updatedCompanies));
-            setCompanies(updatedCompanies);
-        } catch (e) {
-            console.error('회사 데이터 저장 실패:', e);
-        }
+    loadCompanies();
+  }, []);
+
+  // 회사 추가
+  const handleAddCompany = async () => {
+    if (!newCompany.name.trim()) {
+      alert('회사 이름을 입력해주세요.');
+      return;
+    }
+
+    const companyId = `comp-${new Date().getTime().toString().slice(-6)}`;
+    const company = {
+      id: companyId,
+      name: newCompany.name,
+      products: []
     };
 
-    // 회사 추가 처리
-    const handleAddCompany = () => {
-        if (!newCompany.name.trim()) {
-            alert('회사 이름을 입력해주세요.');
-            return;
-        }
-
-        const companyExists = companies.some(
-            company => company.name.toLowerCase() === newCompany.name.toLowerCase()
-        );
-
-        if (companyExists) {
-            alert('이미 존재하는 회사 이름입니다.');
-            return;
-        }
-
-        const newCompanyData: Company = {
-            id: `comp-${Date.now()}`,
-            name: newCompany.name.trim(),
-            products: []
-        };
-
-        const updatedCompanies = [...companies, newCompanyData];
-        saveCompanies(updatedCompanies);
+    try {
+      const result = await addCompany(company);
+      if (result) {
+        setCompanies([...companies, company]);
         setNewCompany({ name: '' });
         setIsAddingCompany(false);
+      }
+    } catch (error) {
+      console.error('회사 추가 중 오류 발생:', error);
+      alert('회사 추가 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 회사 수정
+  const handleUpdateCompany = async (id: string, newName: string) => {
+    if (!newName.trim()) {
+      alert('회사 이름을 입력해주세요.');
+      return;
+    }
+
+    try {
+      const result = await updateCompany(id, { name: newName });
+      if (result) {
+        const updatedCompanies = companies.map(company =>
+          company.id === id ? { ...company, name: newName } : company
+        );
+        setCompanies(updatedCompanies);
+
+        if (selectedCompany?.id === id) {
+          setSelectedCompany({ ...selectedCompany, name: newName });
+        }
+      }
+    } catch (error) {
+      console.error('회사 수정 중 오류 발생:', error);
+      alert('회사 수정 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 회사 삭제
+  const handleDeleteCompany = async (id: string) => {
+    if (!window.confirm('이 회사를 삭제하시겠습니까? 모든 제품 정보가 함께 삭제됩니다.')) {
+      return;
+    }
+
+    try {
+      const result = await deleteCompany(id);
+      if (result) {
+        const updatedCompanies = companies.filter(company => company.id !== id);
+        setCompanies(updatedCompanies);
+        if (selectedCompany?.id === id) {
+          setSelectedCompany(null);
+        }
+      }
+    } catch (error) {
+      console.error('회사 삭제 중 오류 발생:', error);
+      alert('회사 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 제품 추가
+  const handleAddProduct = async () => {
+    if (!selectedCompany) return;
+    if (!newProduct.name.trim()) {
+      alert('제품 이름을 입력해주세요.');
+      return;
+    }
+    if (newProduct.defaultPrice <= 0) {
+      alert('유효한 가격을 입력해주세요.');
+      return;
+    }
+
+    const productId = `prod-${selectedCompany.id}-${new Date().getTime().toString().slice(-6)}`;
+    const product = {
+      id: productId,
+      name: newProduct.name,
+      defaultPrice: newProduct.defaultPrice,
+      companyId: selectedCompany.id
     };
 
-    // 제품 추가 처리
-    const handleAddProduct = () => {
-        if (!selectedCompany) {
-            alert('회사를 먼저 선택해주세요.');
-            return;
-        }
-
-        if (!newProduct.name.trim()) {
-            alert('제품 이름을 입력해주세요.');
-            return;
-        }
-
-        const productExists = selectedCompany.products.some(
-            product => product.name.toLowerCase() === newProduct.name.toLowerCase()
-        );
-
-        if (productExists) {
-            alert('이미 존재하는 제품 이름입니다.');
-            return;
-        }
-
-        const newProductData: Product = {
-            id: `prod-${Date.now()}`,
-            name: newProduct.name.trim(),
-            defaultPrice: newProduct.defaultPrice
+    try {
+      const result = await addProduct(product);
+      if (result) {
+        const formattedProduct = {
+          id: product.id,
+          name: product.name,
+          defaultPrice: product.defaultPrice
         };
 
-        const updatedCompanies = companies.map(company =>
-            company.id === selectedCompany.id
-                ? { ...company, products: [...company.products, newProductData] }
-                : company
-        );
+        const updatedCompanies = companies.map(company => {
+          if (company.id === selectedCompany.id) {
+            return {
+              ...company,
+              products: [...company.products, formattedProduct]
+            };
+          }
+          return company;
+        });
 
-        saveCompanies(updatedCompanies);
+        setCompanies(updatedCompanies);
+        setSelectedCompany({
+          ...selectedCompany,
+          products: [...selectedCompany.products, formattedProduct]
+        });
         setNewProduct({ name: '', defaultPrice: 0 });
         setIsAddingProduct(false);
+      }
+    } catch (error) {
+      console.error('제품 추가 중 오류 발생:', error);
+      alert('제품 추가 중 오류가 발생했습니다.');
+    }
+  };
 
-        // 선택된 회사 업데이트
-        const updatedCompany = updatedCompanies.find(c => c.id === selectedCompany.id);
-        if (updatedCompany) {
-            setSelectedCompany(updatedCompany);
-        }
-    };
+  // 제품 수정
+  const handleUpdateProduct = async (productId: string, updatedData: { name?: string, defaultPrice?: number }) => {
+    if (!selectedCompany) return;
 
-    // 회사 삭제 처리
-    const handleDeleteCompany = (companyId: string) => {
-        if (!confirm('정말 이 회사를 삭제하시겠습니까? 관련된 모든 제품 정보도 함께 삭제됩니다.')) {
-            return;
-        }
+    try {
+      const result = await updateProduct(productId, updatedData);
+      if (result) {
+        const updatedCompanies = companies.map(company => {
+          if (company.id === selectedCompany.id) {
+            return {
+              ...company,
+              products: company.products.map(product =>
+                product.id === productId
+                  ? { ...product, ...updatedData }
+                  : product
+              )
+            };
+          }
+          return company;
+        });
 
-        const updatedCompanies = companies.filter(company => company.id !== companyId);
-        saveCompanies(updatedCompanies);
+        setCompanies(updatedCompanies);
+        setSelectedCompany({
+          ...selectedCompany,
+          products: selectedCompany.products.map(product =>
+            product.id === productId
+              ? { ...product, ...updatedData }
+              : product
+          )
+        });
+      }
+    } catch (error) {
+      console.error('제품 수정 중 오류 발생:', error);
+      alert('제품 수정 중 오류가 발생했습니다.');
+    }
+  };
 
-        if (selectedCompany && selectedCompany.id === companyId) {
-            setSelectedCompany(null);
-        }
-    };
+  // 제품 삭제
+  const handleDeleteProduct = async (productId: string) => {
+    if (!selectedCompany) return;
+    if (!window.confirm('이 제품을 삭제하시겠습니까?')) {
+      return;
+    }
 
-    // 제품 삭제 처리
-    const handleDeleteProduct = (productId: string) => {
-        if (!selectedCompany) return;
+    try {
+      const result = await deleteProduct(productId);
+      if (result) {
+        const updatedCompanies = companies.map(company => {
+          if (company.id === selectedCompany.id) {
+            return {
+              ...company,
+              products: company.products.filter(product => product.id !== productId)
+            };
+          }
+          return company;
+        });
 
-        if (!confirm('정말 이 제품을 삭제하시겠습니까?')) {
-            return;
-        }
+        setCompanies(updatedCompanies);
+        setSelectedCompany({
+          ...selectedCompany,
+          products: selectedCompany.products.filter(product => product.id !== productId)
+        });
+      }
+    } catch (error) {
+      console.error('제품 삭제 중 오류 발생:', error);
+      alert('제품 삭제 중 오류가 발생했습니다.');
+    }
+  };
 
-        const updatedCompanies = companies.map(company =>
-            company.id === selectedCompany.id
-                ? {
-                    ...company,
-                    products: company.products.filter(product => product.id !== productId)
-                }
-                : company
-        );
+  // 회사 선택
+  const handleSelectCompany = (company: Company) => {
+    setSelectedCompany(company);
+    setIsAddingProduct(false);
+  };
 
-        saveCompanies(updatedCompanies);
-
-        // 선택된 회사 업데이트
-        const updatedCompany = updatedCompanies.find(c => c.id === selectedCompany.id);
-        if (updatedCompany) {
-            setSelectedCompany(updatedCompany);
-        }
-    };
-
-    // 초기 데이터로 리셋
-    const handleResetToDefault = () => {
-        if (!confirm('모든 회사 및 제품 데이터를 초기 상태로 되돌리시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-            return;
-        }
-
-        saveCompanies(initialCompanies);
-        setSelectedCompany(null);
-    };
-
+  // 로딩 중 표시
+  if (loading) {
     return (
-        <div className="max-w-6xl mx-auto py-8">
-            <div className="mb-8 flex justify-between items-center">
-                <h1 className="text-2xl font-bold">회사 및 제품 관리</h1>
-                <div className="space-x-2">
-                    <button
-                        onClick={handleResetToDefault}
-                        className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
-                    >
-                        초기 데이터로 리셋
-                    </button>
-                    <Link
-                        href="/orders"
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-                    >
-                        주문 관리로 돌아가기
-                    </Link>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* 회사 목록 */}
-                <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-                    <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                        <h2 className="text-lg font-semibold">회사 목록</h2>
-                        <button
-                            onClick={() => setIsAddingCompany(true)}
-                            className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-                        >
-                            + 새 회사
-                        </button>
-                    </div>
-
-                    {isAddingCompany && (
-                        <div className="p-4 border-b border-gray-200 bg-gray-50">
-                            <h3 className="text-md font-medium mb-2">새 회사 추가</h3>
-                            <div className="mb-3">
-                                <input
-                                    type="text"
-                                    value={newCompany.name}
-                                    onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })}
-                                    placeholder="회사명"
-                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                />
-                            </div>
-                            <div className="flex justify-end space-x-2">
-                                <button
-                                    onClick={() => setIsAddingCompany(false)}
-                                    className="px-3 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-                                >
-                                    취소
-                                </button>
-                                <button
-                                    onClick={handleAddCompany}
-                                    className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                                >
-                                    추가
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="overflow-y-auto max-h-96">
-                        {companies.length > 0 ? (
-                            <ul className="divide-y divide-gray-200">
-                                {companies.map((company) => (
-                                    <li key={company.id} className="hover:bg-gray-50">
-                                        <div
-                                            className={`p-4 flex justify-between items-center cursor-pointer ${selectedCompany?.id === company.id ? 'bg-indigo-50' : ''
-                                                }`}
-                                            onClick={() => setSelectedCompany(company)}
-                                        >
-                                            <div>
-                                                <h3 className="font-medium">{company.name}</h3>
-                                                <p className="text-sm text-gray-500">{company.products.length}개 제품</p>
-                                            </div>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDeleteCompany(company.id);
-                                                }}
-                                                className="text-red-500 hover:text-red-700"
-                                            >
-                                                삭제
-                                            </button>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <div className="p-4 text-center text-gray-500">
-                                등록된 회사가 없습니다.
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* 제품 목록 */}
-                <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden md:col-span-2">
-                    <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                        <h2 className="text-lg font-semibold">
-                            {selectedCompany ? `${selectedCompany.name} 제품` : '제품 목록'}
-                        </h2>
-                        {selectedCompany && (
-                            <button
-                                onClick={() => setIsAddingProduct(true)}
-                                className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-                            >
-                                + 새 제품
-                            </button>
-                        )}
-                    </div>
-
-                    {selectedCompany && isAddingProduct && (
-                        <div className="p-4 border-b border-gray-200 bg-gray-50">
-                            <h3 className="text-md font-medium mb-2">새 제품 추가</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                                <input
-                                    type="text"
-                                    value={newProduct.name}
-                                    onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                                    placeholder="제품명"
-                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                />
-                                <input
-                                    type="number"
-                                    value={newProduct.defaultPrice === 0 ? '' : newProduct.defaultPrice}
-                                    onChange={(e) => {
-                                        const value = e.target.value === '' ? 0 : parseInt(e.target.value);
-                                        setNewProduct({ ...newProduct, defaultPrice: value });
-                                    }}
-                                    placeholder="기본 가격 (원)"
-                                    min="0"
-                                    step="1000"
-                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                />
-                            </div>
-                            <div className="flex justify-end space-x-2">
-                                <button
-                                    onClick={() => setIsAddingProduct(false)}
-                                    className="px-3 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-                                >
-                                    취소
-                                </button>
-                                <button
-                                    onClick={handleAddProduct}
-                                    className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                                >
-                                    추가
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {selectedCompany ? (
-                        selectedCompany.products.length > 0 ? (
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                제품명
-                                            </th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                기본 가격
-                                            </th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                관리
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {selectedCompany.products.map((product) => (
-                                            <tr key={product.id} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {product.name}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    {product.defaultPrice.toLocaleString()}원
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <button
-                                                        onClick={() => handleDeleteProduct(product.id)}
-                                                        className="text-red-500 hover:text-red-700"
-                                                    >
-                                                        삭제
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ) : (
-                            <div className="p-6 text-center text-gray-500">
-                                등록된 제품이 없습니다. 새 제품을 추가해주세요.
-                            </div>
-                        )
-                    ) : (
-                        <div className="p-6 text-center text-gray-500">
-                            왼쪽에서 회사를 선택하면 해당 회사의 제품이 여기에 표시됩니다.
-                        </div>
-                    )}
-                </div>
-            </div>
+      <div className="max-w-6xl mx-auto py-8">
+        <h1 className="text-2xl font-bold mb-6">회사 관리</h1>
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+          <p className="text-center text-gray-500">데이터를 불러오는 중...</p>
         </div>
+      </div>
     );
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">회사 관리</h1>
+        <Link href="/" className="text-indigo-600 hover:text-indigo-800">
+          &larr; 메인 페이지로 돌아가기
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* 회사 목록 */}
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">회사 목록</h2>
+            <button
+              onClick={() => setIsAddingCompany(true)}
+              className="px-2 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+            >
+              + 회사 추가
+            </button>
+          </div>
+
+          {isAddingCompany && (
+            <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <input
+                type="text"
+                value={newCompany.name}
+                onChange={(e) => setNewCompany({ name: e.target.value })}
+                placeholder="회사 이름"
+                className="w-full p-2 mb-2 border border-gray-300 rounded-md"
+              />
+              <div className="flex justify-end space-x-2">
+                <button
+                  onClick={() => setIsAddingCompany(false)}
+                  className="px-3 py-1 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleAddCompany}
+                  className="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                >
+                  추가
+                </button>
+              </div>
+            </div>
+          )}
+
+          {companies.length > 0 ? (
+            <ul className="divide-y divide-gray-200">
+              {companies.map((company) => (
+                <li key={company.id} className="py-3">
+                  <div className="flex justify-between items-center">
+                    <button
+                      onClick={() => handleSelectCompany(company)}
+                      className={`text-left font-medium ${
+                        selectedCompany?.id === company.id
+                          ? 'text-indigo-600'
+                          : 'text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      {company.name}
+                      <span className="ml-2 text-gray-500 text-sm">
+                        ({company.products.length}개 제품)
+                      </span>
+                    </button>
+                    <div className="flex space-x-1">
+                      <button
+                        onClick={() => {
+                          const newName = prompt('새 회사 이름을 입력하세요:', company.name);
+                          if (newName !== null) {
+                            handleUpdateCompany(company.id, newName);
+                          }
+                        }}
+                        className="text-blue-600 hover:text-blue-800 px-2"
+                      >
+                        수정
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCompany(company.id)}
+                        className="text-red-600 hover:text-red-800 px-2"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-center text-gray-500 py-4">등록된 회사가 없습니다.</p>
+          )}
+        </div>
+
+        {/* 제품 목록 */}
+        <div className="md:col-span-2 bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+          {selectedCompany ? (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">
+                  {selectedCompany.name} 제품 목록
+                </h2>
+                <button
+                  onClick={() => setIsAddingProduct(true)}
+                  className="px-2 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                >
+                  + 제품 추가
+                </button>
+              </div>
+
+              {isAddingProduct && (
+                <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="grid grid-cols-2 gap-4 mb-2">
+                    <input
+                      type="text"
+                      value={newProduct.name}
+                      onChange={(e) =>
+                        setNewProduct({ ...newProduct, name: e.target.value })
+                      }
+                      placeholder="제품 이름"
+                      className="p-2 border border-gray-300 rounded-md"
+                    />
+                    <input
+                      type="number"
+                      value={newProduct.defaultPrice}
+                      onChange={(e) =>
+                        setNewProduct({
+                          ...newProduct,
+                          defaultPrice: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="기본 가격"
+                      className="p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <button
+                      onClick={() => setIsAddingProduct(false)}
+                      className="px-3 py-1 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                    >
+                      취소
+                    </button>
+                    <button
+                      onClick={handleAddProduct}
+                      className="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                    >
+                      추가
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {selectedCompany.products.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          제품 ID
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          이름
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          기본 가격
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          관리
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200">
+                      {selectedCompany.products.map((product) => (
+                        <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                            {product.id}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                            {product.name}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300">
+                            {product.defaultPrice.toLocaleString()}원
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
+                            <div className="flex justify-end space-x-2">
+                              <button
+                                onClick={() => {
+                                  const newName = prompt('새 제품 이름을 입력하세요:', product.name);
+                                  if (newName !== null) {
+                                    handleUpdateProduct(product.id, { name: newName });
+                                  }
+                                }}
+                                className="text-blue-600 hover:text-blue-800 px-2"
+                              >
+                                이름 수정
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const newPrice = prompt(
+                                    '새 기본 가격을 입력하세요:',
+                                    product.defaultPrice.toString()
+                                  );
+                                  if (newPrice !== null && !isNaN(parseInt(newPrice))) {
+                                    handleUpdateProduct(product.id, {
+                                      defaultPrice: parseInt(newPrice),
+                                    });
+                                  }
+                                }}
+                                className="text-blue-600 hover:text-blue-800 px-2"
+                              >
+                                가격 수정
+                              </button>
+                              <button
+                                onClick={() => handleDeleteProduct(product.id)}
+                                className="text-red-600 hover:text-red-800 px-2"
+                              >
+                                삭제
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-center text-gray-500 py-4">등록된 제품이 없습니다.</p>
+              )}
+            </>
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <p className="text-center text-gray-500">
+                왼쪽에서 회사를 선택하면 제품 목록이 표시됩니다.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }

@@ -168,3 +168,132 @@ export async function updateOrderStatus(orderId, newStatus) {
 
   return true;
 }
+
+// 회사 관련 함수들
+export async function getCompanies() {
+  const { data, error } = await supabase
+    .from('companies')
+    .select(`
+      *,
+      products(*)
+    `);
+
+  if (error) {
+    console.error('회사 데이터 불러오기 오류:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function addCompany(company) {
+  const { data, error } = await supabase
+    .from('companies')
+    .insert({
+      id: company.id,
+      name: company.name
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('회사 추가 오류:', error);
+    return null;
+  }
+
+  return data;
+}
+
+export async function updateCompany(companyId, companyData) {
+  const { error } = await supabase
+    .from('companies')
+    .update({
+      name: companyData.name
+    })
+    .eq('id', companyId);
+
+  if (error) {
+    console.error('회사 업데이트 오류:', error);
+    return false;
+  }
+
+  return true;
+}
+
+export async function deleteCompany(companyId) {
+  // 회사 삭제 전에 관련 제품들 삭제
+  const { error: productsError } = await supabase
+    .from('products')
+    .delete()
+    .eq('company_id', companyId);
+
+  if (productsError) {
+    console.error('회사 제품 삭제 오류:', productsError);
+    return false;
+  }
+
+  // 회사 삭제
+  const { error } = await supabase
+    .from('companies')
+    .delete()
+    .eq('id', companyId);
+
+  if (error) {
+    console.error('회사 삭제 오류:', error);
+    return false;
+  }
+
+  return true;
+}
+
+export async function addProduct(product) {
+  const { data, error } = await supabase
+    .from('products')
+    .insert({
+      id: product.id,
+      name: product.name,
+      default_price: product.defaultPrice,
+      company_id: product.companyId
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('제품 추가 오류:', error);
+    return null;
+  }
+
+  return data;
+}
+
+export async function updateProduct(productId, productData) {
+  const { error } = await supabase
+    .from('products')
+    .update({
+      name: productData.name,
+      default_price: productData.defaultPrice
+    })
+    .eq('id', productId);
+
+  if (error) {
+    console.error('제품 업데이트 오류:', error);
+    return false;
+  }
+
+  return true;
+}
+
+export async function deleteProduct(productId) {
+  const { error } = await supabase
+    .from('products')
+    .delete()
+    .eq('id', productId);
+
+  if (error) {
+    console.error('제품 삭제 오류:', error);
+    return false;
+  }
+
+  return true;
+}
+
