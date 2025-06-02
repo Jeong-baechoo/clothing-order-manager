@@ -144,7 +144,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                             value={orderData.customerName || ''}
                             onChange={handleChange}
                             required
-                            className="w-full p-2 border border-gray-300 rounded-md"
+                            className="w-full p-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md"
                         />
                     </div>
                     <div>
@@ -157,7 +157,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                             value={orderData.phone || ''}
                             onChange={handleChange}
                             placeholder="예: 010-1234-5678"
-                            className="w-full p-2 border border-gray-300 rounded-md"
+                            className="w-full p-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md"
                         />
                     </div>
                     <div>
@@ -169,7 +169,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                             name="address"
                             value={orderData.address || ''}
                             onChange={handleChange}
-                            className="w-full p-2 border border-gray-300 rounded-md"
+                            className="w-full p-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md"
                         />
                     </div>
                 </div>
@@ -229,7 +229,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                             name="paymentMethod"
                             value={orderData.paymentMethod || '신용카드'}
                             onChange={handleChange}
-                            className="w-full p-2 border border-gray-300 rounded-md"
+                            className="w-full p-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md"
                         >
                             <option value="신용카드">신용카드</option>
                             <option value="무통장입금">무통장입금</option>
@@ -247,7 +247,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                             name="status"
                             value={orderData.status || 'pending'}
                             onChange={handleChange}
-                            className="w-full p-2 border border-gray-300 rounded-md"
+                            className="w-full p-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md"
                         >
                             <option value="pending">대기중</option>
                             <option value="processing">처리중</option>
@@ -263,7 +263,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                 <button
                     type="button"
                     onClick={onCancel}
-                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                    className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500"
                 >
                     취소
                 </button>
