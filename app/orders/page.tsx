@@ -251,7 +251,7 @@ const OrdersPage: React.FC = () => {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder="주문 ID, 고객 이름, 상품명으로 검색"
-                            className="w-full p-2 border border-gray-300 rounded-md"
+                            className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md"
                         />
                     </div>
                     <div className="w-full md:w-1/4">
@@ -261,7 +261,7 @@ const OrdersPage: React.FC = () => {
                         <select
                             value={selectedStatus}
                             onChange={(e) => setSelectedStatus(e.target.value)}
-                            className="w-full p-2 border border-gray-300 rounded-md"
+                            className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md"
                         >
                             <option value="all">모든 상태</option>
                             <option value="pending">대기중</option>
@@ -360,7 +360,7 @@ const OrdersPage: React.FC = () => {
                                                 <select
                                                     value={order.status}
                                                     onChange={(e) => handleStatusChange(order.id, e.target.value as Order['status'])}
-                                                    className="text-sm border-gray-300 rounded-md"
+                                                    className="text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md"
                                                 >
                                                     <option value="pending">대기중</option>
                                                     <option value="processing">처리중</option>

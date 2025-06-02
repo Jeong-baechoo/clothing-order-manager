@@ -285,9 +285,9 @@ export default function CompaniesPage() {
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto py-8">
-        <h1 className="text-2xl font-bold mb-6">회사 관리</h1>
+        <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">회사 관리</h1>
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-          <p className="text-center text-gray-500">데이터를 불러오는 중...</p>
+          <p className="text-center text-gray-500 dark:text-gray-300">데이터를 불러오는 중...</p>
         </div>
       </div>
     );
@@ -296,8 +296,8 @@ export default function CompaniesPage() {
   return (
     <div className="max-w-6xl mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">회사 관리</h1>
-        <Link href="/" className="text-indigo-600 hover:text-indigo-800">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">회사 관리</h1>
+        <Link href="/" className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
           &larr; 메인 페이지로 돌아가기
         </Link>
       </div>
@@ -306,7 +306,7 @@ export default function CompaniesPage() {
         {/* 회사 목록 */}
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">회사 목록</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">회사 목록</h2>
             <button
               onClick={() => setIsAddingCompany(true)}
               className="px-2 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
@@ -322,12 +322,12 @@ export default function CompaniesPage() {
                 value={newCompany.name}
                 onChange={(e) => setNewCompany({ name: e.target.value })}
                 placeholder="회사 이름"
-                className="w-full p-2 mb-2 border border-gray-300 rounded-md"
+                className="w-full p-2 mb-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-md"
               />
               <div className="flex justify-end space-x-2">
                 <button
                   onClick={() => setIsAddingCompany(false)}
-                  className="px-3 py-1 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                  className="px-3 py-1 bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-gray-200 rounded hover:bg-gray-400 dark:hover:bg-gray-500"
                 >
                   취소
                 </button>
@@ -342,7 +342,7 @@ export default function CompaniesPage() {
           )}
 
           {companies.length > 0 ? (
-            <ul className="divide-y divide-gray-200">
+            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
               {companies.map((company) => (
                 <li key={company.id} className="py-3">
                   <div className="flex justify-between items-center">
@@ -350,12 +350,12 @@ export default function CompaniesPage() {
                       onClick={() => handleSelectCompany(company)}
                       className={`text-left font-medium ${
                         selectedCompany?.id === company.id
-                          ? 'text-indigo-600'
+                          ? 'text-indigo-600 dark:text-indigo-400'
                           : 'text-gray-700 dark:text-gray-300'
                       }`}
                     >
                       {company.name}
-                      <span className="ml-2 text-gray-500 text-sm">
+                      <span className="ml-2 text-gray-500 dark:text-gray-400 text-sm">
                         ({company.products.length}개 제품)
                       </span>
                     </button>
@@ -367,13 +367,13 @@ export default function CompaniesPage() {
                             handleUpdateCompany(company.id, newName);
                           }
                         }}
-                        className="text-blue-600 hover:text-blue-800 px-2"
+                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 px-2"
                       >
                         수정
                       </button>
                       <button
                         onClick={() => handleDeleteCompany(company.id)}
-                        className="text-red-600 hover:text-red-800 px-2"
+                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 px-2"
                       >
                         삭제
                       </button>
@@ -383,7 +383,7 @@ export default function CompaniesPage() {
               ))}
             </ul>
           ) : (
-            <p className="text-center text-gray-500 py-4">등록된 회사가 없습니다.</p>
+            <p className="text-center text-gray-500 dark:text-gray-400 py-4">등록된 회사가 없습니다.</p>
           )}
         </div>
 
@@ -392,7 +392,7 @@ export default function CompaniesPage() {
           {selectedCompany ? (
             <>
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                   {selectedCompany.name} 제품 목록
                 </h2>
                 <button
@@ -413,7 +413,7 @@ export default function CompaniesPage() {
                         setNewProduct({ ...newProduct, name: e.target.value })
                       }
                       placeholder="제품 이름"
-                      className="p-2 border border-gray-300 rounded-md"
+                      className="p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-md"
                     />
                     <input
                       type="number"
@@ -425,13 +425,13 @@ export default function CompaniesPage() {
                         })
                       }
                       placeholder="기본 가격"
-                      className="p-2 border border-gray-300 rounded-md"
+                      className="p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-md"
                     />
                   </div>
                   <div className="flex justify-end space-x-2">
                     <button
                       onClick={() => setIsAddingProduct(false)}
-                      className="px-3 py-1 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                      className="px-3 py-1 bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-gray-200 rounded hover:bg-gray-400 dark:hover:bg-gray-500"
                     >
                       취소
                     </button>
@@ -447,7 +447,7 @@ export default function CompaniesPage() {
 
               {selectedCompany.products.length > 0 ? (
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-700">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -464,7 +464,7 @@ export default function CompaniesPage() {
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200">
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                       {selectedCompany.products.map((product) => (
                         <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
@@ -485,7 +485,7 @@ export default function CompaniesPage() {
                                     handleUpdateProduct(product.id, { name: newName });
                                   }
                                 }}
-                                className="text-blue-600 hover:text-blue-800 px-2"
+                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 px-2"
                               >
                                 이름 수정
                               </button>
@@ -501,13 +501,13 @@ export default function CompaniesPage() {
                                     });
                                   }
                                 }}
-                                className="text-blue-600 hover:text-blue-800 px-2"
+                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 px-2"
                               >
                                 가격 수정
                               </button>
                               <button
                                 onClick={() => handleDeleteProduct(product.id)}
-                                className="text-red-600 hover:text-red-800 px-2"
+                                className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 px-2"
                               >
                                 삭제
                               </button>
@@ -519,12 +519,12 @@ export default function CompaniesPage() {
                   </table>
                 </div>
               ) : (
-                <p className="text-center text-gray-500 py-4">등록된 제품이 없습니다.</p>
+                <p className="text-center text-gray-500 dark:text-gray-400 py-4">등록된 제품이 없습니다.</p>
               )}
             </>
           ) : (
             <div className="h-full flex items-center justify-center">
-              <p className="text-center text-gray-500">
+              <p className="text-center text-gray-500 dark:text-gray-400">
                 왼쪽에서 회사를 선택하면 제품 목록이 표시됩니다.
               </p>
             </div>
