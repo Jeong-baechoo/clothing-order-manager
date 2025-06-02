@@ -95,7 +95,7 @@ export default function OrderDetailView({ order, onClose }: OrderDetailProps) {
                                                 {item.price.toLocaleString()}원
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white font-medium">
-                                                {(item.price * item.quantity).toLocaleString()}원
+                                                {(item.price * (item.quantity === undefined ? 0 : item.quantity)).toLocaleString()}원
                                             </td>
                                         </tr>
                                     ))}

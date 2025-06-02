@@ -39,11 +39,11 @@ export default function OrderExport({ orders }: OrderExportProps) {
                     order.phone,
                     order.address,
                     item.product,
-                    item.quantity.toString(),
+                    (item.quantity === undefined ? '0' : item.quantity.toString()),
                     item.size,
                     item.color,
                     item.price.toString(),
-                    (item.price * item.quantity).toString(),
+                    (item.price * (item.quantity === undefined ? 0 : item.quantity)).toString(),
                     index === 0 ? order.totalPrice.toString() : '', // 첫 번째 항목에만 총 금액 표시
                     index === 0 ? getStatusText(order.status) : '', // 첫 번째 항목에만 상태 표시
                     index === 0 ? order.orderDate : '', // 첫 번째 항목에만 주문일 표시

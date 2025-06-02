@@ -93,7 +93,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
     // 총 주문 금액 계산
     const calculateTotalPrice = (): number => {
         return (orderData.items || []).reduce((sum, item) => {
-            return sum + ((item.price || 0) * (item.quantity || 1));
+            return sum + ((item.price || 0) * (item.quantity === undefined ? 0 : item.quantity));
         }, 0);
     };    // 폼 제출 핸들러
     const handleSubmit = (e: React.FormEvent) => {
@@ -193,16 +193,46 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                 </div>
 
                 {orderData.items && orderData.items.length > 0 ? (
-                    <div className="space-y-2">
-                        {orderData.items.map((item, index) => (
-                            <OrderItemForm
-                                key={item.id || index}
-                                item={item}
-                                onChange={(updatedItem) => handleItemChange(index, updatedItem)}
-                                onRemove={() => handleRemoveItem(index)}
-                                isRemovable={orderData.items!.length > 1}
-                            />
-                        ))}
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead className="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        상품명
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        수량
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        사이즈
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        색상
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        가격
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        소계
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        관리
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                {orderData.items.map((item, index) => (
+                                    <OrderItemForm
+                                        key={item.id || index}
+                                        item={item}
+                                        onChange={(updatedItem) => handleItemChange(index, updatedItem)}
+                                        onRemove={() => handleRemoveItem(index)}
+                                        isRemovable={orderData.items!.length > 1}
+                                        isTableMode={true}
+                                    />
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 ) : (
                     <div className="text-center py-6 bg-gray-50 dark:bg-gray-700 rounded-lg">

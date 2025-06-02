@@ -1,8 +1,48 @@
+'use client';
+
 import Link from "next/link";
+import { useState } from 'react';
+import OrderFormModal from './components/OrderFormModal';
+import { Order } from './models/orderTypes';
+import { addOrder } from './lib/supabase';
 
 export default function Home() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleSubmitOrder = async (orderData: Partial<Order>) => {
+    try {
+      const newOrder: Order = {
+        id: `ORD-${Date.now()}`,
+        orderDate: new Date().toISOString().split('T')[0],
+        ...orderData,
+      } as Order;
+
+      await addOrder(newOrder);
+      alert('주문이 성공적으로 추가되었습니다.');
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('주문 추가 중 오류 발생:', error);
+      alert('주문 추가 중 오류가 발생했습니다.');
+    }
+  };
+
   return (
       <div>
+        {isModalOpen && (
+          <OrderFormModal
+            onSubmit={handleSubmitOrder}
+            onClose={handleCloseModal}
+          />
+        )}
+
         {/* 메인 컨텐츠 */}
         <div className="relative max-w-4xl mx-auto py-12 px-4">
           {/* 헤더 */}
@@ -28,9 +68,9 @@ export default function Home() {
               </div>
             </Link>
 
-            <Link
-              href="/orders/new"
-              className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700"
+            <button
+              onClick={handleOpenModal}
+              className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 text-left"
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -41,7 +81,7 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
                 </svg>
               </div>
-            </Link>
+            </button>
           </div>
 
           {/* 주요 기능 안내 */}

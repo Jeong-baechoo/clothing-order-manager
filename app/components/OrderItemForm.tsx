@@ -48,9 +48,10 @@ interface OrderItemFormProps {
     onChange: (item: Partial<OrderItem>) => void;
     onRemove: () => void;
     isRemovable: boolean;
+    isTableMode?: boolean;
 }
 
-export default function OrderItemForm({ item, onChange, onRemove, isRemovable }: OrderItemFormProps) {
+export default function OrderItemForm({ item, onChange, onRemove, isRemovable, isTableMode = false }: OrderItemFormProps) {
     // 직접 입력 모드 상태
     const [customSizeMode, setCustomSizeMode] = useState(false);
     const [customColorMode, setCustomColorMode] = useState(false);
@@ -78,6 +79,196 @@ export default function OrderItemForm({ item, onChange, onRemove, isRemovable }:
         setShowProductSelector(false);
     };
 
+    // 상품 선택 모달
+    const ProductSelectorModal = () => (
+        showProductSelector && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                    <div className="p-4 border-b border-gray-200">
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-lg font-bold">상품 선택</h2>
+                            <button
+                                onClick={() => setShowProductSelector(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                &times; 닫기
+                            </button>
+                        </div>
+                    </div>
+                    <div className="p-4">
+                        <ProductManager onSelectProduct={handleProductSelect} />
+                    </div>
+                </div>
+            </div>
+        )
+    );
+
+    // 사이즈 선택/입력 컴포넌트
+    const SizeSelector = () => (
+        customSizeMode ? (
+            <div className="flex space-x-2">
+                <input
+                    type="text"
+                    value={item.size || ''}
+                    onChange={(e) => onChange({ ...item, size: e.target.value })}
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    placeholder="직접 입력"
+                />
+                <button
+                    type="button"
+                    onClick={() => setCustomSizeMode(false)}
+                    className="px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md text-xs hover:bg-gray-300 dark:hover:bg-gray-500"
+                >
+                    목록
+                </button>
+            </div>
+        ) : (
+            <div className="flex space-x-2">
+                <select
+                    value={item.size || ''}
+                    onChange={(e) => onChange({ ...item, size: e.target.value })}
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                    <option value="">사이즈 선택</option>
+                    {sizeOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                            {option.label}
+                        </option>
+                    ))}
+                </select>
+                <button
+                    type="button"
+                    onClick={() => setCustomSizeMode(true)}
+                    className="px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md text-xs hover:bg-gray-300 dark:hover:bg-gray-500"
+                >
+                    직접 입력
+                </button>
+            </div>
+        )
+    );
+
+    // 색상 선택/입력 컴포넌트
+    const ColorSelector = () => (
+        customColorMode ? (
+            <div className="flex space-x-2">
+                <input
+                    type="text"
+                    value={item.color || ''}
+                    onChange={(e) => onChange({ ...item, color: e.target.value })}
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    placeholder="직접 입력"
+                />
+                <button
+                    type="button"
+                    onClick={() => setCustomColorMode(false)}
+                    className="px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md text-xs hover:bg-gray-300 dark:hover:bg-gray-500"
+                >
+                    목록
+                </button>
+            </div>
+        ) : (
+            <div className="flex space-x-2">
+                <select
+                    value={item.color || ''}
+                    onChange={(e) => onChange({ ...item, color: e.target.value })}
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                    <option value="">색상 선택</option>
+                    {colorOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                            {option.label}
+                        </option>
+                    ))}
+                </select>
+                <button
+                    type="button"
+                    onClick={() => setCustomColorMode(true)}
+                    className="px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md text-xs hover:bg-gray-300 dark:hover:bg-gray-500"
+                >
+                    직접 입력
+                </button>
+            </div>
+        )
+    );
+
+    // 테이블 모드일 때 렌더링
+    if (isTableMode) {
+        return (
+            <>
+                <ProductSelectorModal />
+                <tr className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-3 py-2">
+                        <div className="flex space-x-2">
+                            <input
+                                type="text"
+                                value={item.product || ''}
+                                onChange={(e) => onChange({ ...item, product: e.target.value })}
+                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                placeholder="예: 면 티셔츠"
+                                readOnly={showProductSelector}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowProductSelector(true)}
+                                className="px-2 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-xs"
+                            >
+                                찾기
+                            </button>
+                        </div>
+                    </td>
+                    <td className="px-3 py-2">
+                        <input
+                            type="number"
+                            value={item.quantity === undefined ? '' : item.quantity}
+                            onChange={(e) => {
+                                const value = e.target.value === '' ? undefined : parseInt(e.target.value);
+                                onChange({ ...item, quantity: value });
+                            }}
+                            min="0"
+                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        />
+                    </td>
+                    <td className="px-3 py-2">
+                        <SizeSelector />
+                    </td>
+                    <td className="px-3 py-2">
+                        <ColorSelector />
+                    </td>
+                    <td className="px-3 py-2">
+                        <input
+                            type="number"
+                            value={item.price === 0 && !item.price ? '' : item.price}
+                            onChange={(e) => {
+                                const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                                onChange({ ...item, price: value });
+                            }}
+                            min="0"
+                            step="1000"
+                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        />
+                    </td>
+                    <td className="px-3 py-2">
+                        <span className="font-semibold">{((item.price || 0) * (item.quantity === undefined ? 0 : item.quantity)).toLocaleString()}원</span>
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                        {isRemovable && (
+                            <button
+                                onClick={onRemove}
+                                className="text-red-500 hover:text-red-700"
+                                type="button"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        )}
+                    </td>
+                </tr>
+            </>
+        );
+    }
+
+    // 카드 모드일 때 렌더링 (기존 방식)
     return (
         <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-3 relative">
             {isRemovable && (
@@ -92,27 +283,7 @@ export default function OrderItemForm({ item, onChange, onRemove, isRemovable }:
                 </button>
             )}
 
-            {/* 상품 선택 모달 */}
-            {showProductSelector && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-                        <div className="p-4 border-b border-gray-200">
-                            <div className="flex justify-between items-center">
-                                <h2 className="text-lg font-bold">상품 선택</h2>
-                                <button
-                                    onClick={() => setShowProductSelector(false)}
-                                    className="text-gray-500 hover:text-gray-700"
-                                >
-                                    &times; 닫기
-                                </button>
-                            </div>
-                        </div>
-                        <div className="p-4">
-                            <ProductManager onSelectProduct={handleProductSelect} />
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ProductSelectorModal />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -144,12 +315,12 @@ export default function OrderItemForm({ item, onChange, onRemove, isRemovable }:
                     </label>
                     <input
                         type="number"
-                        value={item.quantity === 1 && !item.quantity ? '' : item.quantity}
+                        value={item.quantity === undefined ? '' : item.quantity}
                         onChange={(e) => {
-                            const value = e.target.value === '' ? 1 : parseInt(e.target.value);
-                            onChange({ ...item, quantity: value < 1 ? 1 : value });
+                            const value = e.target.value === '' ? undefined : parseInt(e.target.value);
+                            onChange({ ...item, quantity: value });
                         }}
-                        min="1"
+                        min="0"
                         className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     />
                 </div>
@@ -158,92 +329,14 @@ export default function OrderItemForm({ item, onChange, onRemove, isRemovable }:
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         사이즈
                     </label>
-                    {customSizeMode ? (
-                        <div className="flex space-x-2">
-                            <input
-                                type="text"
-                                value={item.size || ''}
-                                onChange={(e) => onChange({ ...item, size: e.target.value })}
-                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                                placeholder="직접 입력"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setCustomSizeMode(false)}
-                                className="px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md text-xs hover:bg-gray-300 dark:hover:bg-gray-500"
-                            >
-                                목록
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="flex space-x-2">
-                            <select
-                                value={item.size || ''}
-                                onChange={(e) => onChange({ ...item, size: e.target.value })}
-                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                            >
-                                <option value="">사이즈 선택</option>
-                                {sizeOptions.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </select>
-                            <button
-                                type="button"
-                                onClick={() => setCustomSizeMode(true)}
-                                className="px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md text-xs hover:bg-gray-300 dark:hover:bg-gray-500"
-                            >
-                                직접 입력
-                            </button>
-                        </div>
-                    )}
+                    <SizeSelector />
                 </div>
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         색상
                     </label>
-                    {customColorMode ? (
-                        <div className="flex space-x-2">
-                            <input
-                                type="text"
-                                value={item.color || ''}
-                                onChange={(e) => onChange({ ...item, color: e.target.value })}
-                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                                placeholder="직접 입력"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setCustomColorMode(false)}
-                                className="px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md text-xs hover:bg-gray-300 dark:hover:bg-gray-500"
-                            >
-                                목록
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="flex space-x-2">
-                            <select
-                                value={item.color || ''}
-                                onChange={(e) => onChange({ ...item, color: e.target.value })}
-                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                            >
-                                <option value="">색상 선택</option>
-                                {colorOptions.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </select>
-                            <button
-                                type="button"
-                                onClick={() => setCustomColorMode(true)}
-                                className="px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md text-xs hover:bg-gray-300 dark:hover:bg-gray-500"
-                            >
-                                직접 입력
-                            </button>
-                        </div>
-                    )}
+                    <ColorSelector />
                 </div>
 
                 <div>
@@ -265,7 +358,7 @@ export default function OrderItemForm({ item, onChange, onRemove, isRemovable }:
 
                 <div className="flex items-end">
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        소계: <span className="text-lg font-semibold">{((item.price || 0) * (item.quantity || 1)).toLocaleString()}원</span>
+                        소계: <span className="text-lg font-semibold">{((item.price || 0) * (item.quantity === undefined ? 0 : item.quantity)).toLocaleString()}원</span>
                     </p>
                 </div>
             </div>

@@ -5,7 +5,7 @@ import OrderDetailView from '../components/OrderDetailView';
 import OrderStatistics from '../components/OrderStatistics';
 import OrderExport from '../components/OrderExport';
 import ConfirmDialog from '../components/ConfirmDialog';
-import OrderForm from '../components/OrderForm';
+import OrderFormModal from '../components/OrderFormModal';
 import { Order, initialOrders, getStatusColor, orderStatusMap } from '../models/orderTypes';
 import { getOrders, addOrder, updateOrder, deleteOrder, updateOrderStatus } from '../lib/supabase';
 
@@ -232,9 +232,9 @@ const OrdersPage: React.FC = () => {
             <OrderStatistics orders={orders} />
 
             {isFormVisible && (
-                <OrderForm
+                <OrderFormModal
                     onSubmit={isEditMode ? handleEditOrder : handleAddOrder}
-                    onCancel={handleFormCancel}
+                    onClose={handleFormCancel}
                     initialData={currentOrder || undefined}
                     isEdit={isEditMode}
                 />

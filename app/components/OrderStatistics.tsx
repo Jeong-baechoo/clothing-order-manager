@@ -34,7 +34,7 @@ export default function OrderStatistics({ orders }: OrderStatisticsProps) {
         const totalItems = allItems.length;
 
         // 총 주문 수량
-        const totalQuantity = allItems.reduce((sum, item) => sum + item.quantity, 0);
+        const totalQuantity = allItems.reduce((sum, item) => sum + (item.quantity === undefined ? 0 : item.quantity), 0);
 
         // 평균 주문당 항목 수
         const avgItemsPerOrder = totalOrders > 0 ? (totalItems / totalOrders).toFixed(1) : '0';
@@ -42,7 +42,7 @@ export default function OrderStatistics({ orders }: OrderStatisticsProps) {
         // 가장 많이 주문된 상품
         const productCounts: Record<string, number> = {};
         allItems.forEach(item => {
-            productCounts[item.product] = (productCounts[item.product] || 0) + item.quantity;
+            productCounts[item.product] = (productCounts[item.product] || 0) + (item.quantity === undefined ? 0 : item.quantity);
         });
 
         let mostOrderedProduct = '';
