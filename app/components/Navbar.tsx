@@ -12,7 +12,7 @@ export default function Navbar() {
                 <div className="flex justify-between h-16">
                     <div className="flex">
                         <div className="flex-shrink-0 flex items-center">
-                            <span className="text-xl font-bold text-gray-800 dark:text-white">의류 주문 관리</span>
+                            <span className="text-xl font-bold text-gray-800 dark:text-white">케룸 주문 관리</span>
                         </div>
                         <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                             <Link
