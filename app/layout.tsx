@@ -33,7 +33,7 @@ export default function RootLayout({
           className="fixed inset-0 pointer-events-none"
           style={{
             backgroundImage: `url('/images/caelum-logo-transparent.png')`,
-            backgroundSize: '600px auto',
+            backgroundSize: '1300px auto',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
             opacity: 0.2,
