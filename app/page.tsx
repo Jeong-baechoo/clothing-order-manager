@@ -2,20 +2,7 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        {/* 배경 로고 - z-index 수정 */}
-        <div
-          className="fixed inset-0 pointer-events-none"
-          style={{
-            backgroundImage: `url('/images/caelum-logo-transparent.png')`,
-            backgroundSize: '600px auto',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            opacity: 0.2,
-            zIndex: 0
-          }}
-        />
-
+      <div>
         {/* 메인 컨텐츠 */}
         <div className="relative max-w-4xl mx-auto py-12 px-4">
           {/* 헤더 */}
