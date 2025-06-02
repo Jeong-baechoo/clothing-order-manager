@@ -1,17 +1,13 @@
 'use client';
 
-import { initialOrders } from '../models/orderTypes';
+import { Order } from '../models/orderTypes';
 
 interface OrderDetailProps {
-    orderId: string;
+    order: Order;
     onClose: () => void;
 }
 
-export default function OrderDetailView({ orderId, onClose }: OrderDetailProps) {
-
-    // 실제 구현에서는 여기서 API 호출로 주문 정보를 가져올 수 있습니다
-    // 지금은 샘플 데이터에서 orderId로 찾아서 사용합니다
-    const orderDetail = initialOrders.find(order => order.id === orderId) || initialOrders[0];
+export default function OrderDetailView({ order, onClose }: OrderDetailProps) {
 
     const handlePrint = () => {
         window.print();
@@ -36,16 +32,16 @@ export default function OrderDetailView({ orderId, onClose }: OrderDetailProps) 
                             <h3 className="text-lg font-semibold mb-3">주문 정보</h3>
                             <div className="space-y-2 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                                 <p>
-                                    <span className="font-medium">주문 ID:</span> {orderDetail.id}
+                                    <span className="font-medium">주문 ID:</span> {order.id}
                                 </p>
                                 <p>
-                                    <span className="font-medium">주문일:</span> {orderDetail.orderDate}
+                                    <span className="font-medium">주문일:</span> {order.orderDate}
                                 </p>
                                 <p>
-                                    <span className="font-medium">결제 방법:</span> {orderDetail.paymentMethod}
+                                    <span className="font-medium">결제 방법:</span> {order.paymentMethod}
                                 </p>
                                 <p>
-                                    <span className="font-medium">총 가격:</span> {orderDetail.totalPrice.toLocaleString()}원
+                                    <span className="font-medium">총 가격:</span> {order.totalPrice.toLocaleString()}원
                                 </p>
                             </div>
                         </div>
@@ -54,20 +50,20 @@ export default function OrderDetailView({ orderId, onClose }: OrderDetailProps) 
                             <h3 className="text-lg font-semibold mb-3">고객 정보</h3>
                             <div className="space-y-2 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                                 <p>
-                                    <span className="font-medium">이름:</span> {orderDetail.customerName}
+                                    <span className="font-medium">이름:</span> {order.customerName}
                                 </p>
                                 <p>
-                                    <span className="font-medium">전화번호:</span> {orderDetail.phone}
+                                    <span className="font-medium">전화번호:</span> {order.phone}
                                 </p>
                                 <p>
-                                    <span className="font-medium">배송 주소:</span> {orderDetail.address}
+                                    <span className="font-medium">배송 주소:</span> {order.address}
                                 </p>
                             </div>
                         </div>
                     </div>
 
                     <div className="mt-6">
-                        <h3 className="text-lg font-semibold mb-3">주문 상품 ({orderDetail.items.length}개)</h3>
+                        <h3 className="text-lg font-semibold mb-3">주문 상품 ({order.items.length}개)</h3>
                         <div className="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-100 dark:bg-gray-600">
@@ -81,7 +77,7 @@ export default function OrderDetailView({ orderId, onClose }: OrderDetailProps) 
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 dark:divide-gray-500">
-                                    {orderDetail.items.map((item) => (
+                                    {order.items.map((item) => (
                                         <tr key={item.id} className="hover:bg-gray-100 dark:hover:bg-gray-600">
                                             <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                                                 {item.product}
@@ -110,7 +106,7 @@ export default function OrderDetailView({ orderId, onClose }: OrderDetailProps) 
                                             총 주문 금액:
                                         </td>
                                         <td className="px-4 py-3 text-sm text-right font-bold text-gray-900 dark:text-white">
-                                            {orderDetail.totalPrice.toLocaleString()}원
+                                            {order.totalPrice.toLocaleString()}원
                                         </td>
                                     </tr>
                                 </tfoot>

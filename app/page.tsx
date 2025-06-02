@@ -6,13 +6,13 @@ export default function Home() {
       <div
           className="min-h-screen bg-no-repeat bg-center relative bg-gray-50"
           style={{
-            backgroundImage: `url('/images/caelum-logo-transparent.png')`,
+            backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)), url('/images/caelum-logo-transparent.png')`,
             backgroundSize: '800px auto',
             backgroundPosition: 'center'
           }}
       >
         <div className="max-w-4xl mx-auto py-10 px-4">
-          <h1 className="text-3xl font-bold mb-6 text-gray-800">케룸 주문 관리 시스템</h1>
+          <h1 className="text-3xl font-bold mb-6 text-gray-800">의류 주문 관리 시스템</h1>
 
           <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-lg rounded-lg p-6 mb-8 border border-gray-200">
             <h2 className="text-xl font-semibold mb-4">시스템 개요</h2>

@@ -23,7 +23,7 @@ const OrdersPage: React.FC = () => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedStatus, setSelectedStatus] = useState<string>('all');
-    const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [isFormVisible, setIsFormVisible] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [currentOrder, setCurrentOrder] = useState<Partial<Order> | null>(null);
@@ -202,10 +202,10 @@ const OrdersPage: React.FC = () => {
 
     return (
         <div className="max-w-6xl mx-auto py-8">
-            {selectedOrderId && (
+            {selectedOrder && (
                 <OrderDetailView
-                    orderId={selectedOrderId}
-                    onClose={() => setSelectedOrderId(null)}
+                    order={selectedOrder}
+                    onClose={() => setSelectedOrder(null)}
                 />
             )}
 
@@ -340,7 +340,7 @@ const OrdersPage: React.FC = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div className="flex space-x-2">
                                                 <button
-                                                    onClick={() => setSelectedOrderId(order.id)}
+                                                    onClick={() => setSelectedOrder(order)}
                                                     className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                                                 >
                                                     상세보기
