@@ -288,19 +288,28 @@ export async function updateOrderStatus(orderId, newStatus) {
 
 // 회사 관련 함수들
 export async function getCompanies() {
-  const { data, error } = await supabase
-    .from('companies')
-    .select(`
-      *,
-      products(*)
-    `);
+  try {
+    const { data, error } = await supabase
+      .from('companies')
+      .select(`
+        id,
+        name,
+        products (
+          id,
+          name,
+          default_price,
+          company_id
+        )
+      `)
+      .order('name');
 
-  if (error) {
-    console.error('회사 데이터 불러오기 오류:', error);
+    if (error) throw error;
+
+    return data || [];
+  } catch (error) {
+    console.error('회사 목록 조회 실패:', error);
     return [];
   }
-
-  return data || [];
 }
 
 export async function addCompany(company) {
@@ -460,4 +469,35 @@ export async function deleteRelatedLink(linkId) {
   }
 
   return true;
+}
+
+// 상품 목록 조회
+export async function getProducts(companyId = null) {
+  try {
+    let query = supabase
+      .from('products')
+      .select(`
+        id,
+        name,
+        default_price,
+        company_id,
+        companies (
+          name
+        )
+      `)
+      .order('name');
+
+    if (companyId) {
+      query = query.eq('company_id', companyId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    return { success: true, data: data || [] };
+  } catch (error) {
+    console.error('상품 목록 조회 실패:', error);
+    return { success: false, error };
+  }
 }

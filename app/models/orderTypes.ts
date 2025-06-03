@@ -70,130 +70,58 @@ export const getStatusColor = (status: string) => {
     }
 };
 
-// 샘플 주문 데이터
+// 초기 더미 데이터 (개발 및 테스트용)
 export const initialOrders: Order[] = [
     {
         id: 'ORD-001',
-        customerName: '김민수',
+        customerName: '김철수',
         phone: '010-1234-5678',
         address: '서울시 강남구 테헤란로 123',
-        status: 'delivered',
-        orderDate: '2025-05-28',
+        status: 'pending',
+        orderDate: '2024-01-15',
         paymentMethod: '신용카드',
+        totalPrice: 45000,
         items: [
             {
-                id: 'ITEM-001-1',
+                id: 'ITEM-001',
                 product: '기본 티셔츠',
                 quantity: 2,
-                size: 'M',
+                size: 'L',
                 color: '검정',
-                price: 15000
-            },
-            {
-                id: 'ITEM-001-2',
-                product: '면 반바지',
-                quantity: 1,
-                size: 'M',
-                color: '네이비',
-                price: 25000
+                price: 15000,
+                smallPrintingQuantity: 1,
+                largePrintingQuantity: 0,
+                extraLargePrintingQuantity: 0,
+                extraLargePrintingPrice: 0,
+                designWorkQuantity: 0,
+                designWorkPrice: 0
             }
-        ],
-        totalPrice: 55000
+        ]
     },
     {
         id: 'ORD-002',
-        customerName: '이지연',
+        customerName: '이영희',
         phone: '010-9876-5432',
-        address: '서울시 서초구 방배로 456',
+        address: '부산시 해운대구 센텀시티로 456',
         status: 'processing',
-        orderDate: '2025-05-30',
+        orderDate: '2024-01-16',
         paymentMethod: '무통장입금',
+        totalPrice: 78000,
         items: [
             {
-                id: 'ITEM-002-1',
-                product: '면 맨투맨',
+                id: 'ITEM-002',
+                product: '후드티',
                 quantity: 1,
-                size: 'L',
-                color: '흰색',
-                price: 35000
+                size: 'XL',
+                color: '네이비',
+                price: 35000,
+                smallPrintingQuantity: 0,
+                largePrintingQuantity: 2,
+                extraLargePrintingQuantity: 1,
+                extraLargePrintingPrice: 5000,
+                designWorkQuantity: 1,
+                designWorkPrice: 15000
             }
-        ],
-        totalPrice: 35000
-    },
-    {
-        id: 'ORD-003',
-        customerName: '박준호',
-        phone: '010-5555-4444',
-        address: '경기도 성남시 분당구 판교로 789',
-        status: 'pending',
-        orderDate: '2025-06-01',
-        paymentMethod: '카카오페이',
-        items: [
-            {
-                id: 'ITEM-003-1',
-                product: '청바지',
-                quantity: 1,
-                size: '32',
-                color: '진청',
-                price: 45000
-            },
-            {
-                id: 'ITEM-003-2',
-                product: '가죽 벨트',
-                quantity: 1,
-                size: 'FREE',
-                color: '브라운',
-                price: 18000
-            },
-            {
-                id: 'ITEM-003-3',
-                product: '면 양말',
-                quantity: 3,
-                size: 'FREE',
-                color: '흰색',
-                price: 4000
-            }
-        ],
-        totalPrice: 75000
-    }
-];
-
-// 초기 회사 및 제품 데이터
-export const initialCompanies: Company[] = [
-    {
-        id: 'comp-001',
-        name: '스타일리시',
-        products: [
-            { id: 'prod-001-1', name: '기본 티셔츠', defaultPrice: 15000 },
-            { id: 'prod-001-2', name: '면 맨투맨', defaultPrice: 35000 },
-            { id: 'prod-001-3', name: '후드 집업', defaultPrice: 45000 }
-        ]
-    },
-    {
-        id: 'comp-002',
-        name: '데님코',
-        products: [
-            { id: 'prod-002-1', name: '청바지', defaultPrice: 45000 },
-            { id: 'prod-002-2', name: '데님 자켓', defaultPrice: 65000 },
-            { id: 'prod-002-3', name: '데님 스커트', defaultPrice: 38000 }
-        ]
-    },
-    {
-        id: 'comp-003',
-        name: '코지웨어',
-        products: [
-            { id: 'prod-003-1', name: '니트 스웨터', defaultPrice: 42000 },
-            { id: 'prod-003-2', name: '울 코트', defaultPrice: 120000 },
-            { id: 'prod-003-3', name: '캐시미어 목도리', defaultPrice: 38000 }
-        ]
-    },
-    {
-        id: 'comp-004',
-        name: '액티브스포츠',
-        products: [
-            { id: 'prod-004-1', name: '스포츠 티셔츠', defaultPrice: 28000 },
-            { id: 'prod-004-2', name: '트레이닝 팬츠', defaultPrice: 35000 },
-            { id: 'prod-004-3', name: '기능성 재킷', defaultPrice: 89000 }
         ]
     }
 ];

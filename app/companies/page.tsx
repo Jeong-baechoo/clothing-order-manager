@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Company, initialCompanies } from '../models/orderTypes';
+import { Company } from '../models/orderTypes';
 import { getCompanies, addCompany, updateCompany, deleteCompany, addProduct, updateProduct, deleteProduct } from '../lib/supabase';
 
 // Supabase에서 가져온 회사 및 제품 타입 정의
@@ -51,27 +51,10 @@ export default function CompaniesPage() {
           setCompanies(formattedCompanies);
         } else {
           // 데이터가 없으면 초기 데이터로 설정
-          setCompanies(initialCompanies);
-          // 필요한 경우 초기 데이터를 Supabase에 저장
-          // 주석 해제하여 사용: 처음 한 번만 실행하세요!
-          /*
-          for (const company of initialCompanies) {
-            const savedCompany = await addCompany(company);
-            if (savedCompany) {
-              for (const product of company.products) {
-                await addProduct({
-                  ...product,
-                  companyId: savedCompany.id
-                });
-              }
-            }
-          }
-          */
+
         }
       } catch (error) {
         console.error('회사 데이터 로드 중 오류 발생:', error);
-        // 오류 발생 시 초기 데이터 사용
-        setCompanies(initialCompanies);
       } finally {
         setLoading(false);
       }
@@ -348,11 +331,10 @@ export default function CompaniesPage() {
                   <div className="flex justify-between items-center">
                     <button
                       onClick={() => handleSelectCompany(company)}
-                      className={`text-left font-medium ${
-                        selectedCompany?.id === company.id
-                          ? 'text-indigo-600 dark:text-indigo-400'
-                          : 'text-gray-700 dark:text-gray-300'
-                      }`}
+                      className={`text-left font-medium ${selectedCompany?.id === company.id
+                        ? 'text-indigo-600 dark:text-indigo-400'
+                        : 'text-gray-700 dark:text-gray-300'
+                        }`}
                     >
                       {company.name}
                       <span className="ml-2 text-gray-500 dark:text-gray-400 text-sm">

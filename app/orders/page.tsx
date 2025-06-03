@@ -6,7 +6,7 @@ import OrderStatistics from '../components/OrderStatistics';
 import OrderExport from '../components/OrderExport';
 import ConfirmDialog from '../components/ConfirmDialog';
 import OrderFormModal from '../components/OrderFormModal';
-import { Order, initialOrders, getStatusColor, orderStatusMap } from '../models/orderTypes';
+import { Order, getStatusColor, orderStatusMap } from '../models/orderTypes';
 import { getOrders, addOrder, updateOrder, deleteOrder, updateOrderStatus } from '../lib/supabase';
 
 // Supabase에서 가져온 주문 항목의 타입 정의
@@ -29,6 +29,7 @@ interface SupabaseOrderItem {
 interface ErrorObject {
     message?: string;
     code?: string;
+    [key: string]: unknown; // 다른 속성들도 허용
 }
 
 const OrdersPage: React.FC = () => {
@@ -80,14 +81,14 @@ const OrdersPage: React.FC = () => {
                     setOrders(formattedOrders);
                 } else {
                     // 데이터가 없으면 초기 데이터로 설정하고 Supabase에 저장
-                    setOrders(initialOrders);
+                    // setOrders(initialOrders);
                     // 초기 데이터를 Supabase에 저장 (실제 구현 시 필요에 따라 사용)
                     // initialOrders.forEach(order => addOrder(order));
                 }
             } catch (error) {
                 console.error('주문 데이터 로드 중 오류 발생:', error);
                 // 오류 발생 시 초기 데이터 사용
-                setOrders(initialOrders);
+                // setOrders(initialOrders);
             } finally {
                 setLoading(false);
             }
@@ -114,8 +115,15 @@ const OrdersPage: React.FC = () => {
 
     // 새 주문 추가
     const handleAddOrder = async (orderData: Partial<Order>) => {
+        // UUID 기반 고유 ID 생성
+        const generateOrderId = () => {
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substr(2, 9);
+            return `ORD-${timestamp}-${random}`.toUpperCase();
+        };
+
         const newOrder: Order = {
-            id: `ORD-${String(orders.length + 1).padStart(3, '0')}`,
+            id: generateOrderId(),
             orderDate: new Date().toISOString().split('T')[0],
             ...orderData,
         } as Order;
@@ -124,28 +132,14 @@ const OrdersPage: React.FC = () => {
             const result = await addOrder(newOrder);
 
             if (result.success) {
-                // 성공 시 로컬 상태 업데이트
                 setOrders([...orders, newOrder]);
-                // 성공 메시지 표시
                 alert('주문이 성공적으로 추가되었습니다.');
             } else {
-                // 실패 메시지 표시
                 console.error('주문 추가 실패:', result.error);
-                // 에러 객체가 어떤 형태인지 확인하고 안전하게 메시지 표시
-                let errorMessage = '알 수 없는 오류';
-                if (result.error) {
-                    // ErrorObject로 타입 단언하여 message 속성에 접근
-                    const error = result.error as ErrorObject;
-                    errorMessage = error.message || error.code || JSON.stringify(error);
-                }
-                alert(`주문 추가에 실패했습니다: ${errorMessage}`);
             }
         } catch (error) {
             console.error('주문 추가 중 오류 발생:', error);
             alert('주문 추가 중 오류가 발생했습니다.');
-        } finally {
-            setIsFormVisible(false);
-            setCurrentOrder(null);
         }
     };
 
