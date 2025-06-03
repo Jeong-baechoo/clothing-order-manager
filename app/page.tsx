@@ -1,28 +1,14 @@
 'use client';
 
 import Link from "next/link";
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import OrderFormModal from './components/OrderFormModal';
 import RelatedLinks from './components/RelatedLinks';
 import { Order } from './models/orderTypes';
 import { addOrder } from './lib/supabase';
-import { ensureRelatedLinksTable } from './lib/initRelatedLinks';
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // 관련 링크 테이블 초기화
-  useEffect(() => {
-    const initTable = async () => {
-      try {
-        await ensureRelatedLinksTable();
-      } catch (error) {
-        console.error('관련 링크 테이블 초기화 오류:', error);
-      }
-    };
-
-    initTable();
-  }, []);
 
   const handleOpenModal = () => {
     setIsModalOpen(true);
