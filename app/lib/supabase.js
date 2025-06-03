@@ -11,7 +11,15 @@ if (!supabaseUrl || !supabaseKey) {
   console.error('Supabase URL 또는 API 키가 설정되지 않았습니다. .env.local 파일을 확인하세요.');
 }
 
-export const supabase = createClient(supabaseUrl || '', supabaseKey || '');
+// 자동 타임스탬프 기능 비활성화 옵션 추가
+export const supabase = createClient(supabaseUrl || '', supabaseKey || '', {
+  db: {
+    schema: 'public',
+  },
+  global: {
+    headers: { 'x-supabase-db-set-timestamps': 'false' },
+  },
+});
 
 // 주문 관련 함수들
 export async function getOrders() {
@@ -31,102 +39,211 @@ export async function getOrders() {
 }
 
 export async function addOrder(order) {
-  // 주문 데이터 추가
-  const { data: orderData, error: orderError } = await supabase
-    .from('orders')
-    .insert({
-      id: order.id,
-      customer_name: order.customerName,
-      phone: order.phone,
-      address: order.address,
-      status: order.status,
-      order_date: order.orderDate,
-      payment_method: order.paymentMethod,
-      total_price: order.totalPrice
-    })
-    .select()
-    .single();
+  try {
+    console.log('추가할 주문 데이터:', JSON.stringify(order));
 
-  if (orderError) {
-    console.error('주문 추가 오류:', orderError);
-    return null;
-  }
+    // 주문 데이터 추가
+    const { data: orderData, error: orderError } = await supabase
+      .from('orders')
+      .insert({
+        id: order.id,
+        customer_name: order.customerName,
+        phone: order.phone,
+        address: order.address,
+        status: order.status,
+        order_date: order.orderDate,
+        payment_method: order.paymentMethod,
+        total_price: order.totalPrice
+      })
+      .select()
+      .single();
 
-  // 주문 항목 추가
-  if (order.items && order.items.length > 0) {
-    const orderItems = order.items.map(item => ({
-      order_id: orderData.id,
-      product: item.product,
-      quantity: item.quantity,
-      size: item.size,
-      color: item.color,
-      price: item.price
-    }));
-
-    const { error: itemsError } = await supabase
-      .from('order_items')
-      .insert(orderItems);
-
-    if (itemsError) {
-      console.error('주문 항목 추가 오류:', itemsError);
+    if (orderError) {
+      console.error('주문 추가 오류 상세:', orderError);
+      return { success: false, error: orderError };
     }
-  }
 
-  return orderData;
+    console.log('주문 추가 결과:', orderData);
+
+    // 주문 항목 추가
+    if (order.items && order.items.length > 0) {
+      const orderItems = order.items.map(item => ({
+        order_id: orderData.id,
+        product: item.product || '',
+        quantity: item.quantity || 0,
+        size: item.size || '',
+        color: item.color || '',
+        price: item.price || 0,
+        small_printing_quantity: item.smallPrintingQuantity || 0,
+        large_printing_quantity: item.largePrintingQuantity || 0,
+        extra_large_printing_quantity: item.extraLargePrintingQuantity || 0,
+        extra_large_printing_price: item.extraLargePrintingPrice || 0,
+        design_work_quantity: item.designWorkQuantity || 0,
+        design_work_price: item.designWorkPrice || 0
+      }));
+
+      console.log('추가할 주문 항목:', JSON.stringify(orderItems));
+
+      const { data: insertData, error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems)
+        .select();
+
+      if (itemsError) {
+        console.error('주문 항목 추가 오류 상세:', itemsError);
+        return { success: false, error: itemsError };
+      }
+
+      console.log('주문 항목 추가 결과:', insertData);
+    }
+
+    return { success: true, data: orderData };
+  } catch (error) {
+    console.error('주문 추가 중 예외 발생:', error);
+    return { success: false, error };
+  }
 }
 
 export async function updateOrder(order) {
-  // 주문 데이터 업데이트
-  const { error: orderError } = await supabase
-    .from('orders')
-    .update({
-      customer_name: order.customerName,
-      phone: order.phone,
-      address: order.address,
-      status: order.status,
-      payment_method: order.paymentMethod,
-      total_price: order.totalPrice
-    })
-    .eq('id', order.id);
+  try {
+    console.log('업데이트할 주문 데이터:', JSON.stringify(order));
 
-  if (orderError) {
-    console.error('주문 업데이트 오류:', orderError);
-    return false;
-  }
+    // 기존 주문 데이터 조회
+    const { data: existingOrder, error: getError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', order.id)
+      .single();
 
-  // 기존 주문 항목 삭제
-  const { error: deleteError } = await supabase
-    .from('order_items')
-    .delete()
-    .eq('order_id', order.id);
-
-  if (deleteError) {
-    console.error('주문 항목 삭제 오류:', deleteError);
-    return false;
-  }
-
-  // 새 주문 항목 추가
-  if (order.items && order.items.length > 0) {
-    const orderItems = order.items.map(item => ({
-      order_id: order.id,
-      product: item.product,
-      quantity: item.quantity,
-      size: item.size,
-      color: item.color,
-      price: item.price
-    }));
-
-    const { error: itemsError } = await supabase
-      .from('order_items')
-      .insert(orderItems);
-
-    if (itemsError) {
-      console.error('주문 항목 추가 오류:', itemsError);
-      return false;
+    if (getError) {
+      console.error('주문 조회 오류:', getError);
+      return { success: false, error: getError };
     }
-  }
 
-  return true;
+    // 주문 데이터 업데이트 - 단순 update 사용
+    try {
+      const updateData = {
+        customer_name: order.customerName,
+        phone: order.phone,
+        address: order.address,
+        status: order.status,
+        payment_method: order.paymentMethod,
+        total_price: order.totalPrice,
+        order_date: order.orderDate || existingOrder.order_date // 기존 날짜 유지
+      };
+
+      console.log('주문 업데이트 데이터:', updateData);
+
+      // insert + onConflict 대신 단순 update 사용
+      const { error: orderError } = await supabase
+        .from('orders')
+        .update(updateData)
+        .eq('id', order.id);
+
+      if (orderError) {
+        console.error('주문 업데이트 오류 상세:', orderError);
+        return { success: false, error: orderError };
+      }
+
+      console.log('주문 기본 정보 업데이트 성공');
+    } catch (updateError) {
+      console.error('주문 업데이트 중 예외 발생:', updateError);
+      return { success: false, error: updateError };
+    }
+
+    // 기존 주문 항목 삭제
+    try {
+      const { error: deleteError } = await supabase
+        .from('order_items')
+        .delete()
+        .eq('order_id', order.id);
+
+      if (deleteError) {
+        console.error('주문 항목 삭제 오류 상세:', deleteError);
+        return { success: false, error: deleteError };
+      }
+
+      console.log('기존 주문 항목 삭제 성공');
+    } catch (deleteError) {
+      console.error('주문 항목 삭제 중 예외 발생:', deleteError);
+      return { success: false, error: deleteError };
+    }
+
+    // 새 주문 항목 추가
+    if (order.items && order.items.length > 0) {
+      try {
+        const orderItems = order.items.map(item => ({
+          order_id: order.id,
+          product: item.product || '',
+          quantity: item.quantity || 0,
+          size: item.size || '',
+          color: item.color || '',
+          price: item.price || 0,
+          small_printing_quantity: item.smallPrintingQuantity || 0,
+          large_printing_quantity: item.largePrintingQuantity || 0,
+          extra_large_printing_quantity: item.extraLargePrintingQuantity || 0,
+          extra_large_printing_price: item.extraLargePrintingPrice || 0,
+          design_work_quantity: item.designWorkQuantity || 0,
+          design_work_price: item.designWorkPrice || 0
+        }));
+
+        console.log('추가할 주문 항목:', JSON.stringify(orderItems));
+
+        // 주문 항목을 하나씩 추가 (대량 추가에서 오류 발생 시 개별 추가로 전환)
+        try {
+          // 먼저 한 번에 모든 항목 추가 시도
+          const { error: bulkInsertError } = await supabase
+            .from('order_items')
+            .insert(orderItems);
+
+          if (bulkInsertError) {
+            console.error('일괄 항목 추가 오류:', bulkInsertError);
+
+            // 오류 발생 시 항목을 하나씩 개별적으로 추가
+            for (const item of orderItems) {
+              const { error: singleInsertError } = await supabase
+                .from('order_items')
+                .insert(item);
+
+              if (singleInsertError) {
+                console.error('개별 항목 추가 오류:', singleInsertError);
+                return { success: false, error: singleInsertError };
+              }
+            }
+          }
+        } catch (bulkError) {
+          console.error('항목 추가 중 예외 발생:', bulkError);
+
+          // 예외 발생 시 항목을 하나씩 개별적으로 추가
+          for (const item of orderItems) {
+            try {
+              const { error: singleInsertError } = await supabase
+                .from('order_items')
+                .insert(item);
+
+              if (singleInsertError) {
+                console.error('개별 항목 추가 오류:', singleInsertError);
+                return { success: false, error: singleInsertError };
+              }
+            } catch (singleError) {
+              console.error('개별 항목 추가 중 예외 발생:', singleError);
+              return { success: false, error: singleError };
+            }
+          }
+        }
+
+        console.log('모든 주문 항목 추가 성공');
+      } catch (insertError) {
+        console.error('주문 항목 추가 중 예외 발생:', insertError);
+        return { success: false, error: insertError };
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('주문 업데이트 중 예외 발생:', error);
+    return { success: false, error };
+  }
 }
 
 export async function deleteOrder(orderId) {

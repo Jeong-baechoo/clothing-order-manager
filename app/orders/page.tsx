@@ -17,6 +17,18 @@ interface SupabaseOrderItem {
     size: string;
     color: string;
     price: number;
+    small_printing_quantity?: number;
+    large_printing_quantity?: number;
+    extra_large_printing_quantity?: number;
+    extra_large_printing_price?: number;
+    design_work_quantity?: number;
+    design_work_price?: number;
+}
+
+// 에러 객체의 타입 정의
+interface ErrorObject {
+    message?: string;
+    code?: string;
 }
 
 const OrdersPage: React.FC = () => {
@@ -56,7 +68,13 @@ const OrdersPage: React.FC = () => {
                             quantity: item.quantity,
                             size: item.size,
                             color: item.color,
-                            price: item.price
+                            price: item.price,
+                            smallPrintingQuantity: item.small_printing_quantity || 0,
+                            largePrintingQuantity: item.large_printing_quantity || 0,
+                            extraLargePrintingQuantity: item.extra_large_printing_quantity || 0,
+                            extraLargePrintingPrice: item.extra_large_printing_price || 0,
+                            designWorkQuantity: item.design_work_quantity || 0,
+                            designWorkPrice: item.design_work_price || 0
                         }))
                     }));
                     setOrders(formattedOrders);
@@ -103,10 +121,28 @@ const OrdersPage: React.FC = () => {
         } as Order;
 
         try {
-            await addOrder(newOrder);
-            setOrders([...orders, newOrder]);
+            const result = await addOrder(newOrder);
+
+            if (result.success) {
+                // 성공 시 로컬 상태 업데이트
+                setOrders([...orders, newOrder]);
+                // 성공 메시지 표시
+                alert('주문이 성공적으로 추가되었습니다.');
+            } else {
+                // 실패 메시지 표시
+                console.error('주문 추가 실패:', result.error);
+                // 에러 객체가 어떤 형태인지 확인하고 안전하게 메시지 표시
+                let errorMessage = '알 수 없는 오류';
+                if (result.error) {
+                    // ErrorObject로 타입 단언하여 message 속성에 접근
+                    const error = result.error as ErrorObject;
+                    errorMessage = error.message || error.code || JSON.stringify(error);
+                }
+                alert(`주문 추가에 실패했습니다: ${errorMessage}`);
+            }
         } catch (error) {
             console.error('주문 추가 중 오류 발생:', error);
+            alert('주문 추가 중 오류가 발생했습니다.');
         } finally {
             setIsFormVisible(false);
             setCurrentOrder(null);
@@ -118,19 +154,60 @@ const OrdersPage: React.FC = () => {
         if (!currentOrder?.id) return;
 
         try {
-            await updateOrder({
+            // 디버깅을 위한 로그 추가
+            console.log('현재 주문:', currentOrder);
+            console.log('업데이트 데이터:', orderData);
+            console.log('현재 주문 items:', currentOrder.items);
+            console.log('업데이트 데이터 items:', orderData.items);
+
+            // 업데이트된 주문 데이터 생성 - items 배열을 명시적으로 처리
+            const updatedOrder = {
                 ...currentOrder,
                 ...orderData,
-                id: currentOrder.id
-            });
+                id: currentOrder.id,
+                // items 배열이 orderData에 있으면 그것을 사용, 없으면 currentOrder의 items 사용
+                items: orderData.items || currentOrder.items
+            };
 
-            setOrders(
-                orders.map((order) =>
-                    order.id === currentOrder.id ? { ...order, ...orderData } as Order : order
-                )
-            );
+            console.log('업데이트된 주문:', updatedOrder);
+            console.log('업데이트된 주문 items:', updatedOrder.items);
+
+            // 업데이트 요청
+            const result = await updateOrder(updatedOrder);
+            console.log('업데이트 결과:', result);
+
+            if (result.success) {
+                // 업데이트 성공 시 로컬 상태 업데이트
+                setOrders(
+                    orders.map((order) => {
+                        if (order.id === currentOrder.id) {
+                            return {
+                                ...order,
+                                ...orderData,
+                                // items 배열이 orderData에 있으면 그것을 사용, 없으면 order의 items 사용
+                                items: orderData.items || order.items
+                            } as Order;
+                        }
+                        return order;
+                    })
+                );
+                // 성공 메시지 표시
+                alert('주문이 성공적으로 업데이트되었습니다.');
+            } else {
+                // 실패 메시지 표시
+                console.error('주문 업데이트 실패:', result.error);
+                // 에러 객체가 어떤 형태인지 확인하고 안전하게 메시지 표시
+                let errorMessage = '알 수 없는 오류';
+                if (result.error) {
+                    // ErrorObject로 타입 단언하여 message 속성에 접근
+                    const error = result.error as ErrorObject;
+                    errorMessage = error.message || error.code || JSON.stringify(error);
+                }
+                alert(`주문 업데이트에 실패했습니다: ${errorMessage}`);
+            }
         } catch (error) {
             console.error('주문 편집 중 오류 발생:', error);
+            alert('주문 편집 중 오류가 발생했습니다.');
         } finally {
             setIsFormVisible(false);
             setIsEditMode(false);

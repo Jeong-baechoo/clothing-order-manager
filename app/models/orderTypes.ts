@@ -22,6 +22,12 @@ export interface OrderItem {
     size: string;
     color: string;
     price: number;
+    smallPrintingQuantity?: number;
+    largePrintingQuantity?: number;
+    extraLargePrintingQuantity?: number;
+    extraLargePrintingPrice?: number;
+    designWorkQuantity?: number;
+    designWorkPrice?: number;
 }
 
 // 주문 타입 정의

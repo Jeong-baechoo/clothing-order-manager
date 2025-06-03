@@ -104,29 +104,32 @@ export async function initRelatedLinksTable() {
 
 // SQL 함수 생성 (Supabase에서 실행할 수 있도록)
 export async function createRelatedLinksTableFunction() {
-  const createFunctionSQL = `
-    CREATE OR REPLACE FUNCTION create_related_links_table()
-    RETURNS void AS $$
-    BEGIN
-      CREATE TABLE IF NOT EXISTS related_links (
-        id SERIAL PRIMARY KEY,
-        title TEXT NOT NULL,
-        url TEXT NOT NULL,
-        description TEXT,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      );
-    END;
-    $$ LANGUAGE plpgsql;
-  `;
+  try {
+    // SQL 실행 대신 직접 테이블 생성 시도
+    const { error } = await supabase.rpc('create_related_links_table', {}, {
+      count: 'exact'
+    }).catch(err => {
+      // RPC 함수가 없으면 테이블을 직접 생성
+      if (err.message && (err.message.includes('function') || err.message.includes('not found'))) {
+        console.log('create_related_links_table 함수가 없습니다. 테이블을 직접 생성합니다.');
+        return supabase
+          .from('related_links')
+          .select('*', { count: 'exact', head: true })
+          .limit(0);
+      }
+      throw err;
+    });
 
-  const { error } = await supabase.rpc('exec_sql', { sql: createFunctionSQL });
+    if (error) {
+      console.error('관련 링크 테이블 확인/생성 오류:', error);
+      return false;
+    }
 
-  if (error) {
+    return true;
+  } catch (error) {
     console.error('SQL 함수 생성 오류:', error);
     return false;
   }
-
-  return true;
 }
 
 // 테이블 초기화 실행

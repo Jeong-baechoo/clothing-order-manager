@@ -73,6 +73,7 @@ export default function OrderDetailView({ order, onClose }: OrderDetailProps) {
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">사이즈</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">색상</th>
                                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">가격</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">프린팅</th>
                                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">소계</th>
                                     </tr>
                                 </thead>
@@ -94,15 +95,35 @@ export default function OrderDetailView({ order, onClose }: OrderDetailProps) {
                                             <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300">
                                                 {item.price.toLocaleString()}원
                                             </td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-left text-gray-500 dark:text-gray-300">
+                                                {item.smallPrintingQuantity ? `소형: ${item.smallPrintingQuantity}개` : ''}
+                                                {item.largePrintingQuantity ? <><br />대형: {item.largePrintingQuantity}개</> : ''}
+                                                {item.extraLargePrintingQuantity ? <><br />특대: {item.extraLargePrintingQuantity}개 ({item.extraLargePrintingPrice?.toLocaleString()}원)</> : ''}
+                                                {item.designWorkQuantity ? <><br />디자인: {item.designWorkQuantity}개 ({item.designWorkPrice?.toLocaleString()}원)</> : ''}
+                                            </td>
                                             <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white font-medium">
-                                                {(item.price * (item.quantity === undefined ? 0 : item.quantity)).toLocaleString()}원
+                                                {(() => {
+                                                    let total = (item.price || 0) * (item.quantity === undefined ? 0 : item.quantity);
+                                                    total += (item.smallPrintingQuantity || 0) * 1500;
+                                                    total += (item.largePrintingQuantity || 0) * 3000;
+
+                                                    if (item.extraLargePrintingQuantity && item.extraLargePrintingPrice) {
+                                                        total += item.extraLargePrintingQuantity * item.extraLargePrintingPrice;
+                                                    }
+
+                                                    if (item.designWorkQuantity && item.designWorkPrice) {
+                                                        total += item.designWorkQuantity * item.designWorkPrice;
+                                                    }
+
+                                                    return total.toLocaleString();
+                                                })()}원
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
                                 <tfoot className="bg-gray-100 dark:bg-gray-600">
                                     <tr>
-                                        <td colSpan={5} className="px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-white">
+                                        <td colSpan={6} className="px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-white">
                                             총 주문 금액:
                                         </td>
                                         <td className="px-4 py-3 text-sm text-right font-bold text-gray-900 dark:text-white">

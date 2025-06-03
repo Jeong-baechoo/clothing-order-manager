@@ -25,7 +25,13 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                 quantity: 1,
                 size: '',
                 color: '',
-                price: 0
+                price: 0,
+                smallPrintingQuantity: 0,
+                largePrintingQuantity: 0,
+                extraLargePrintingQuantity: 0,
+                extraLargePrintingPrice: 0,
+                designWorkQuantity: 0,
+                designWorkPrice: 0
             }
         ]
     });
@@ -70,7 +76,13 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
             quantity: 1,
             size: '',
             color: '',
-            price: 0
+            price: 0,
+            smallPrintingQuantity: 0,
+            largePrintingQuantity: 0,
+            extraLargePrintingQuantity: 0,
+            extraLargePrintingPrice: 0,
+            designWorkQuantity: 0,
+            designWorkPrice: 0
         };
 
         setOrderData(prev => ({
@@ -93,7 +105,23 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
     // 총 주문 금액 계산
     const calculateTotalPrice = (): number => {
         return (orderData.items || []).reduce((sum, item) => {
-            return sum + ((item.price || 0) * (item.quantity === undefined ? 0 : item.quantity));
+            let itemTotal = (item.price || 0) * (item.quantity === undefined ? 0 : item.quantity);
+
+            // 프린팅 비용 추가
+            itemTotal += (item.smallPrintingQuantity || 0) * 1500; // 소형 프린팅
+            itemTotal += (item.largePrintingQuantity || 0) * 3000; // 대형 프린팅
+
+            // 특대형 프린팅 (직접 입력)
+            if (item.extraLargePrintingQuantity && item.extraLargePrintingPrice) {
+                itemTotal += item.extraLargePrintingQuantity * item.extraLargePrintingPrice;
+            }
+
+            // 디자인 작업 (직접 입력)
+            if (item.designWorkQuantity && item.designWorkPrice) {
+                itemTotal += item.designWorkQuantity * item.designWorkPrice;
+            }
+
+            return sum + itemTotal;
         }, 0);
     };    // 폼 제출 핸들러
     const handleSubmit = (e: React.FormEvent) => {
@@ -211,6 +239,9 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                     </th>
                                     <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                         가격
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        프린팅
                                     </th>
                                     <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                         소계
