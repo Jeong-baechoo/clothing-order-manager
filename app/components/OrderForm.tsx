@@ -214,7 +214,8 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                     (!Number.isInteger(item.largePrintingQuantity) ||
                         item.largePrintingQuantity < 0 ||
                         item.largePrintingQuantity > 9999)) {
-                    errors.push(`${itemNum}번 상품의 대형인쇄 수량은 0-9999 사이의 정수여야 합니다.`);                }
+                    errors.push(`${itemNum}번 상품의 대형인쇄 수량은 0-9999 사이의 정수여야 합니다.`);
+                }
 
                 // 특대형 인쇄 검증
                 if (item.extraLargePrintingQuantity !== undefined &&

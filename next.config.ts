@@ -11,7 +11,15 @@ const nextConfig: NextConfig = {
   },
   // basePath: '/clothing-order-manager', // Vercel 배포를 위해 제거
   // assetPrefix: '/clothing-order-manager', // Vercel 배포를 위해 제거
-  // Removed outputFileTracingExcludes to fix build permission issues
+  webpack: (config) => {
+    // React-PDF 관련 설정
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      canvas: false,
+    };
+    config.externals = [...(config.externals || []), { canvas: 'canvas' }];
+    return config;
+  },
 };
 
 export default nextConfig;

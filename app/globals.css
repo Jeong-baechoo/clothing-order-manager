@@ -19,3 +19,146 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* 인쇄용 스타일 */
+@media print {
+
+  /* 페이지 설정 */
+  @page {
+    margin: 0.5cm;
+    size: A4;
+  }
+
+  /* 모달 오버레이 제거 */
+  .fixed.inset-0 {
+    position: static !important;
+    background: white !important;
+    z-index: auto !important;
+  }
+
+  /* 모달 컨테이너 최적화 */
+  .fixed.inset-0>div {
+    max-width: none !important;
+    max-height: none !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  /* 인쇄 시 숨길 요소들 */
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  /* 인쇄 시 전체 화면 사용 */
+  .print\\:max-h-none {
+    max-height: none !important;
+  }
+
+  .print\\:shadow-none {
+    box-shadow: none !important;
+  }
+
+  .print\\:rounded-none {
+    border-radius: 0 !important;
+  }
+
+  /* 배경색 강제 인쇄 */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 페이지 나누기 방지 */
+  .print\\:break-inside-avoid {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* 인보이스 컨테이너 최적화 */
+  .invoice-container {
+    margin: 0 !important;
+    padding: 1rem !important;
+  }
+
+  /* 테이블 헤더 반복 */
+  thead {
+    display: table-header-group;
+  }
+
+  /* 링크 URL 표시 안함 */
+  a[href]:after {
+    content: none !important;
+  }
+
+  /* 폰트 크기 조정 */
+  body {
+    font-size: 11pt;
+    line-height: 1.3;
+  }
+
+  /* 여백 최소화 */
+  .p-6 {
+    padding: 1rem !important;
+  }
+
+  .p-8 {
+    padding: 1rem !important;
+  }
+
+  .mb-8 {
+    margin-bottom: 1rem !important;
+  }
+
+  .mb-6 {
+    margin-bottom: 0.75rem !important;
+  }
+
+  /* 그림자 제거 */
+  .shadow-xl,
+  .shadow-lg,
+  .shadow-md,
+  .shadow-sm {
+    box-shadow: none !important;
+  }
+
+  /* 테이블 경계선 강화 */
+  table {
+    border-collapse: collapse !important;
+  }
+
+  table,
+  th,
+  td {
+    border: 1px solid #000 !important;
+  }
+
+  /* 배경색이 있는 요소들의 대비 강화 */
+  .bg-gray-50,
+  .bg-gray-100,
+  .bg-blue-50 {
+    background-color: #f8f9fa !important;
+  }
+
+  .bg-blue-600 {
+    background-color: #2563eb !important;
+    color: white !important;
+  }
+
+  /* 인쇄 시 색상 유지 */
+  .text-blue-600 {
+    color: #2563eb !important;
+  }
+
+  .text-gray-600 {
+    color: #4b5563 !important;
+  }
+
+  .text-gray-900 {
+    color: #111827 !important;
+  }
+}
