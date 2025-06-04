@@ -107,6 +107,22 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         }));
     }, []);
 
+    // 상품 항목 복사 핸들러
+    const handleCopyItem = useCallback((index: number) => {
+        const itemToCopy = orderData.items?.[index];
+        if (!itemToCopy) return;
+
+        const newItem: OrderItem = {
+            ...JSON.parse(JSON.stringify(itemToCopy)), // 깊은 복사
+            id: `item-${Date.now()}-${(orderData.items?.length || 0) + 1}`
+        };
+
+        setOrderData(prev => ({
+            ...prev,
+            items: [...(prev.items || []), newItem]
+        }));
+    }, [orderData.items]);
+
     // 개별 상품 총액 계산
     const calculateItemTotal = useCallback((item: OrderItem): number => {
         const quantity = Math.max(0, Number(item.quantity) || 0);
@@ -434,11 +450,10 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">색상</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">단가</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">소형인쇄</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">대형인쇄</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">특대형인쇄</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">대형인쇄</th>                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">특대형인쇄</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">디자인작업</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">소계</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">삭제</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">관리</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -577,23 +592,34 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                                     className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
                                                                 />
                                                             </div>
-                                                        </td>
-                                                        <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right font-semibold text-blue-600">
+                                                        </td>                                                        <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right font-semibold text-blue-600">
                                                             {calculateItemTotal(item).toLocaleString()}원
                                                         </td>
                                                         <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
-                                                            {orderData.items!.length > 1 && (
+                                                            <div className="flex justify-center items-center space-x-1">
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => handleRemoveItem(index)}
-                                                                    className="text-red-500 hover:text-red-700 p-1 rounded-md hover:bg-red-50 transition-colors"
-                                                                    title="상품 삭제"
+                                                                    onClick={() => handleCopyItem(index)}
+                                                                    className="text-blue-500 hover:text-blue-700 p-1 rounded-md hover:bg-blue-50 transition-colors"
+                                                                    title="상품 복사"
                                                                 >
                                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
                                                                     </svg>
                                                                 </button>
-                                                            )}
+                                                                {orderData.items!.length > 1 && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleRemoveItem(index)}
+                                                                        className="text-red-500 hover:text-red-700 p-1 rounded-md hover:bg-red-50 transition-colors"
+                                                                        title="상품 삭제"
+                                                                    >
+                                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                        </svg>
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ))}
