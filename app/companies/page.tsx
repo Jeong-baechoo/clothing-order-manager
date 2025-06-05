@@ -475,13 +475,13 @@ export default function CompaniesPage() {
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           이름
                         </th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           소비자 가격
                         </th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           도매가
                         </th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           관리
                         </th>
                       </tr>
@@ -495,10 +495,10 @@ export default function CompaniesPage() {
                           <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                             {product.name}
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-500 dark:text-gray-300">
                             {product.defaultPrice.toLocaleString()}원
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-500 dark:text-gray-300">
                             {product.wholesalePrice ? product.wholesalePrice.toLocaleString() + '원' : '-'}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
