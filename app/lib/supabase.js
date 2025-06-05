@@ -298,6 +298,7 @@ export async function getCompanies() {
           id,
           name,
           default_price,
+          wholesale_price,
           company_id
         )
       `)
@@ -379,6 +380,7 @@ export async function addProduct(product) {
       id: product.id,
       name: product.name,
       default_price: product.defaultPrice,
+      wholesale_price: product.wholesalePrice || 0,
       company_id: product.companyId
     })
     .select()
@@ -393,12 +395,21 @@ export async function addProduct(product) {
 }
 
 export async function updateProduct(productId, productData) {
+  const updateData = {};
+  
+  if (productData.name !== undefined) {
+    updateData.name = productData.name;
+  }
+  if (productData.defaultPrice !== undefined) {
+    updateData.default_price = productData.defaultPrice;
+  }
+  if (productData.wholesalePrice !== undefined) {
+    updateData.wholesale_price = productData.wholesalePrice;
+  }
+
   const { error } = await supabase
     .from('products')
-    .update({
-      name: productData.name,
-      default_price: productData.defaultPrice
-    })
+    .update(updateData)
     .eq('id', productId);
 
   if (error) {
@@ -471,7 +482,6 @@ export async function deleteRelatedLink(linkId) {
   return true;
 }
 
-// 상품 목록 조회
 export async function getProducts(companyId = null) {
   try {
     let query = supabase
@@ -480,6 +490,7 @@ export async function getProducts(companyId = null) {
         id,
         name,
         default_price,
+        wholesale_price,
         company_id,
         companies (
           name

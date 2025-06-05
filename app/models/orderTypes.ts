@@ -12,6 +12,7 @@ export interface Product {
     id: string;
     name: string;
     defaultPrice: number;
+    wholesalePrice?: number;
 }
 
 // 주문 항목 타입 정의

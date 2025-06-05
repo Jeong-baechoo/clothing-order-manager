@@ -10,6 +10,7 @@ interface SupabaseProduct {
   id: string;
   name: string;
   default_price: number;
+  wholesale_price?: number;
   company_id: string;
 }
 
@@ -25,9 +26,10 @@ export default function CompaniesPage() {
   const [isAddingCompany, setIsAddingCompany] = useState(false);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [newCompany, setNewCompany] = useState<{ name: string }>({ name: '' });
-  const [newProduct, setNewProduct] = useState<{ name: string, defaultPrice: number }>({
+  const [newProduct, setNewProduct] = useState<{ name: string, defaultPrice: number, wholesalePrice: number }>({
     name: '',
-    defaultPrice: 0
+    defaultPrice: 0,
+    wholesalePrice: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -45,6 +47,7 @@ export default function CompaniesPage() {
             products: company.products?.map((product: SupabaseProduct) => ({
               id: product.id,
               name: product.name,
+              wholesalePrice: product.wholesale_price,
               defaultPrice: product.default_price
             })) || []
           }));
@@ -153,6 +156,7 @@ export default function CompaniesPage() {
       id: productId,
       name: newProduct.name,
       defaultPrice: newProduct.defaultPrice,
+      wholesalePrice: newProduct.wholesalePrice,
       companyId: selectedCompany.id
     };
 
@@ -162,7 +166,8 @@ export default function CompaniesPage() {
         const formattedProduct = {
           id: product.id,
           name: product.name,
-          defaultPrice: product.defaultPrice
+          defaultPrice: product.defaultPrice,
+          wholesalePrice: product.wholesalePrice
         };
 
         const updatedCompanies = companies.map(company => {
@@ -180,7 +185,7 @@ export default function CompaniesPage() {
           ...selectedCompany,
           products: [...selectedCompany.products, formattedProduct]
         });
-        setNewProduct({ name: '', defaultPrice: 0 });
+        setNewProduct({ name: '', defaultPrice: 0, wholesalePrice: 0 });
         setIsAddingProduct(false);
       }
     } catch (error) {
@@ -190,7 +195,7 @@ export default function CompaniesPage() {
   };
 
   // 제품 수정
-  const handleUpdateProduct = async (productId: string, updatedData: { name?: string, defaultPrice?: number }) => {
+  const handleUpdateProduct = async (productId: string, updatedData: { name?: string, defaultPrice?: number, wholesalePrice?: number }) => {
     if (!selectedCompany) return;
 
     try {
@@ -277,7 +282,7 @@ export default function CompaniesPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto py-8">
+    <div className="max-w-7xl mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">회사 관리</h1>
         <Link href="/" className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
@@ -387,7 +392,7 @@ export default function CompaniesPage() {
 
               {isAddingProduct && (
                 <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <div className="grid grid-cols-2 gap-4 mb-2">
+                  <div className="grid grid-cols-3 gap-4 mb-2">
                     <input
                       type="text"
                       value={newProduct.name}
@@ -406,7 +411,19 @@ export default function CompaniesPage() {
                           defaultPrice: parseInt(e.target.value) || 0,
                         })
                       }
-                      placeholder="기본 가격"
+                      placeholder="소비자 가격"
+                      className="p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-md"
+                    />
+                    <input
+                      type="number"
+                      value={newProduct.wholesalePrice}
+                      onChange={(e) =>
+                        setNewProduct({
+                          ...newProduct,
+                          wholesalePrice: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="도매가"
                       className="p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-md"
                     />
                   </div>
@@ -439,7 +456,10 @@ export default function CompaniesPage() {
                           이름
                         </th>
                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          기본 가격
+                          소비자 가격
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          도매가
                         </th>
                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           관리
@@ -458,6 +478,9 @@ export default function CompaniesPage() {
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300">
                             {product.defaultPrice.toLocaleString()}원
                           </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300">
+                            {product.wholesalePrice ? product.wholesalePrice.toLocaleString() + '원' : '-'}
+                          </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
                             <div className="flex justify-end space-x-2">
                               <button
@@ -469,23 +492,30 @@ export default function CompaniesPage() {
                                 }}
                                 className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 px-2"
                               >
-                                이름 수정
+                                이름
                               </button>
                               <button
                                 onClick={() => {
-                                  const newPrice = prompt(
-                                    '새 기본 가격을 입력하세요:',
-                                    product.defaultPrice.toString()
-                                  );
+                                  const newPrice = prompt('새 소비자 가격을 입력하세요:', product.defaultPrice.toString());
                                   if (newPrice !== null && !isNaN(parseInt(newPrice))) {
-                                    handleUpdateProduct(product.id, {
-                                      defaultPrice: parseInt(newPrice),
-                                    });
+                                    handleUpdateProduct(product.id, { defaultPrice: parseInt(newPrice) });
                                   }
                                 }}
                                 className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 px-2"
                               >
-                                가격 수정
+                                가격
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const newWholesalePrice = prompt('새 도매가를 입력하세요:',
+                                    product.wholesalePrice ? product.wholesalePrice.toString() : '0');
+                                  if (newWholesalePrice !== null && !isNaN(parseInt(newWholesalePrice))) {
+                                    handleUpdateProduct(product.id, { wholesalePrice: parseInt(newWholesalePrice) });
+                                  }
+                                }}
+                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 px-2"
+                              >
+                                도매가
                               </button>
                               <button
                                 onClick={() => handleDeleteProduct(product.id)}
