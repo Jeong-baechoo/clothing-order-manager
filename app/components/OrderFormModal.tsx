@@ -30,7 +30,7 @@ export default function OrderFormModal({ onSubmit, onClose, initialData, isEdit 
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] overflow-hidden flex flex-col">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-7xl w-[95vw] h-[95vh] overflow-hidden flex flex-col">
                 {/* 고정된 헤더 */}
                 <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
                     <div className="flex justify-between items-center">
@@ -49,7 +49,7 @@ export default function OrderFormModal({ onSubmit, onClose, initialData, isEdit 
                 </div>
 
                 {/* 스크롤 가능한 콘텐츠 영역 */}
-                <div className="flex-1 overflow-y-auto px-3 sm:px-6">
+                <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4">
                     <OrderForm
                         onSubmit={handleSubmit}
                         onCancel={onClose}
