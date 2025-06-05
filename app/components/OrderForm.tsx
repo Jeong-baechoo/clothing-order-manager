@@ -439,7 +439,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
 
                             <div className="p-6">
                                 {orderData.items && orderData.items.length > 0 ? (
-                                    <div className="overflow-x-auto">
+                                    <div className="overflow-x-auto max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg min-h-96">
                                         <table className="w-full border-collapse border border-gray-300 dark:border-gray-600" style={{tableLayout: 'fixed'}}>
                                             <colgroup>
                                                 <col style={{ width: '2%' }} />   {/* No. */}
@@ -455,7 +455,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                 <col style={{ width: '8%' }} />   {/* 소계 */}
                                                 <col style={{ width: '5%' }} />   {/* 관리 */}
                                             </colgroup>
-                                            <thead>
+                                            <thead className="sticky top-0 bg-gray-100 dark:bg-gray-700 z-10">
                                                 <tr className="bg-gray-100 dark:bg-gray-700">
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">No.</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">상품명</th>
@@ -721,7 +721,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                     </div>
 
                     {/* 하단 버튼 영역 */}
-                    <div className="border-t border-gray-200 dark:border-gray-700 p-6 bg-gray-50 dark:bg-gray-800">
+                    <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800">
                         <div className="flex justify-end space-x-4">
                             <button
                                 type="button"
