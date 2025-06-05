@@ -9,10 +9,17 @@ import OrderFormModal from '../components/OrderFormModal';
 import { Order, getStatusColor, orderStatusMap } from '../models/orderTypes';
 import { getOrders, addOrder, updateOrder, deleteOrder, updateOrderStatus } from '../lib/supabase';
 
-// Supabase에서 가져온 주문 항목의 타입 정의
+// Supabase에서 가져온 주문 항목의 타입 정의 (정규화된 스키마)
 interface SupabaseOrderItem {
     id: string | number;
-    product: string;
+    product_id: string;
+    product?: {
+        id: string;
+        name: string;
+        default_price: number;
+        wholesale_price?: number;
+    };
+    product_name?: string; // 기존 데이터 호환성을 위한 필드
     quantity: number;
     size: string;
     color: string;
@@ -65,7 +72,8 @@ const OrdersPage: React.FC = () => {
                         totalPrice: order.total_price,
                         items: order.items.map((item: SupabaseOrderItem) => ({
                             id: `ITEM-${item.id}`,
-                            product: item.product,
+                            product: item.product?.name || item.product_name || '알 수 없는 제품', // 정규화된 제품명 처리
+                            productId: item.product_id || item.product?.id, // 제품 ID 저장
                             quantity: item.quantity,
                             size: item.size,
                             color: item.color,
@@ -75,7 +83,8 @@ const OrdersPage: React.FC = () => {
                             extraLargePrintingQuantity: item.extra_large_printing_quantity || 0,
                             extraLargePrintingPrice: item.extra_large_printing_price || 0,
                             designWorkQuantity: item.design_work_quantity || 0,
-                            designWorkPrice: item.design_work_price || 0
+                            designWorkPrice: item.design_work_price || 0,
+                            productInfo: item.product?.id ? item.product : undefined // 제품 정보 저장
                         }))
                     }));
                     setOrders(formattedOrders);

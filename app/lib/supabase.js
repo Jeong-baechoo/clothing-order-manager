@@ -27,7 +27,15 @@ export async function getOrders() {
     .from('orders')
     .select(`
       *,
-      items:order_items(*)
+      items:order_items(
+        *,
+        product:products(
+          id,
+          name,
+          default_price,
+          wholesale_price
+        )
+      )
     `);
 
   if (error) {
@@ -69,7 +77,7 @@ export async function addOrder(order) {
     if (order.items && order.items.length > 0) {
       const orderItems = order.items.map(item => ({
         order_id: orderData.id,
-        product: item.product || '',
+        product_id: item.productId || item.product, // 정규화된 product_id 사용
         quantity: item.quantity || 0,
         size: item.size || '',
         color: item.color || '',
@@ -174,7 +182,7 @@ export async function updateOrder(order) {
       try {
         const orderItems = order.items.map(item => ({
           order_id: order.id,
-          product: item.product || '',
+          product_id: item.productId || item.product, // 정규화된 product_id 사용
           quantity: item.quantity || 0,
           size: item.size || '',
           color: item.color || '',

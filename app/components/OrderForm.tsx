@@ -9,9 +9,11 @@ interface OrderFormProps {
     onCancel: () => void;
     initialData?: Partial<Order>;
     isEdit?: boolean;
+    hideButtons?: boolean;
+    submitTrigger?: number;
 }
 
-export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = false }: OrderFormProps) {
+export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = false, hideButtons = false, submitTrigger }: OrderFormProps) {
     const [orderData, setOrderData] = useState<Partial<Order>>({
         customerName: '',
         phone: '',
@@ -22,6 +24,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
             {
                 id: `item-${Date.now()}-1`,
                 product: '',
+                productId: '', // 정규화된 product_id 필드 추가
                 quantity: 1,
                 size: '',
                 color: '',
@@ -56,6 +59,17 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
             });
         }
     }, [initialData]);
+
+    // 외부에서 제출 트리거 시 폼 제출
+    useEffect(() => {
+        if (submitTrigger && submitTrigger > 0) {
+            const formElement = document.querySelector('form');
+            if (formElement) {
+                const event = new Event('submit', { bubbles: true, cancelable: true });
+                formElement.dispatchEvent(event);
+            }
+        }
+    }, [submitTrigger]);
 
     // 기본 주문 정보 변경 핸들러
     const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -289,6 +303,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                     i === currentItemIndex ? {
                         ...item,
                         product: product.name,
+                        productId: product.id, // 정규화된 product_id 저장
                         price: product.default_price || 0
                     } : item
                 ) || []
@@ -721,40 +736,42 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                     </div>
 
                     {/* 하단 버튼 영역 */}
-                    <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800">
-                        <div className="flex justify-end space-x-4">
-                            <button
-                                type="button"
-                                onClick={onCancel}
-                                disabled={isSubmitting}
-                                className="px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                            >
-                                취소
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={isSubmitting}
-                                className="px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-md flex items-center"
-                            >
-                                {isSubmitting ? (
-                                    <>
-                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        처리중...
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        {isEdit ? '주문 수정' : '주문 등록'}
-                                    </>
-                                )}
-                            </button>
+                    {!hideButtons && (
+                        <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800">
+                            <div className="flex justify-end space-x-4">
+                                <button
+                                    type="button"
+                                    onClick={onCancel}
+                                    disabled={isSubmitting}
+                                    className="px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                                >
+                                    취소
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-md flex items-center"
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            처리중...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            {isEdit ? '주문 수정' : '주문 등록'}
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </form>
             </div>
 

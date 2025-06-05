@@ -18,7 +18,8 @@ export interface Product {
 // 주문 항목 타입 정의
 export interface OrderItem {
     id: string;
-    product: string;
+    product: string; // 제품명 (UI용)
+    productId?: string; // 제품 ID (정규화된 참조)
     quantity: number;
     size: string;
     color: string;
@@ -29,6 +30,15 @@ export interface OrderItem {
     extraLargePrintingPrice?: number;
     designWorkQuantity?: number;
     designWorkPrice?: number;
+    productInfo?: {
+        id: string;
+        name: string;
+        default_price: number;
+        wholesale_price?: number;
+        companies?: {
+            name: string;
+        };
+    };
 }
 
 // 주문 타입 정의

@@ -137,7 +137,14 @@ export default function OrderDetailView({ order, onClose }: OrderDetailProps) {
                                         <tbody>
                                             {order.items.map((item, index) => (
                                                 <tr key={index} className="hover:bg-gray-50 print:hover:bg-transparent" style={{ pageBreakInside: 'avoid' }}>
-                                                    <td className="border border-gray-300 px-3 py-2 print:px-2 print:py-1 print:text-black">{item.product}</td>
+                                                    <td className="border border-gray-300 px-3 py-2 print:px-2 print:py-1 print:text-black">
+                                                        {item.productInfo?.name || item.product}
+                                                        {item.productInfo?.companies?.name && (
+                                                            <div className="text-xs text-gray-500 print:text-gray-600">
+                                                                {item.productInfo.companies.name}
+                                                            </div>
+                                                        )}
+                                                    </td>
                                                     <td className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">{item.size}</td>
                                                     <td className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">{item.color}</td>
                                                     <td className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">{item.quantity}</td>
