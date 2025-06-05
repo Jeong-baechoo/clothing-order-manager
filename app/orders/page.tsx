@@ -272,7 +272,7 @@ const OrdersPage: React.FC = () => {
     };
 
     return (
-        <div className="max-w-6xl mx-auto py-8">
+        <div className="max-w-7xl mx-auto py-8">
             {selectedOrder && (
                 <OrderDetailView
                     order={selectedOrder}

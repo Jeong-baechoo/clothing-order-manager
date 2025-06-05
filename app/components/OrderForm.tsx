@@ -173,7 +173,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
             if (orderData.phone.length > 20) {
                 errors.push('전화번호는 20자를 초과할 수 없습니다.');
             }
-            if (!/^[\d\-\+\(\)\s]{8,20}$/.test(orderData.phone.trim())) {
+            if (!/^[\d\-+()\s]{8,20}$/.test(orderData.phone.trim())) {
                 errors.push('올바른 전화번호 형식을 입력해주세요.');
             }
         }
@@ -440,20 +440,35 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                             <div className="p-6">
                                 {orderData.items && orderData.items.length > 0 ? (
                                     <div className="overflow-x-auto">
-                                        <table className="w-full border-collapse border border-gray-300 dark:border-gray-600">
+                                        <table className="w-full border-collapse border border-gray-300 dark:border-gray-600" style={{tableLayout: 'fixed'}}>
+                                            <colgroup>
+                                                <col style={{ width: '2%' }} />   {/* No. */}
+                                                <col style={{ width: '15%' }} />  {/* 상품명 */}
+                                                <col style={{ width: '6%' }} />   {/* 수량 */}
+                                                <col style={{ width: '8%' }} />   {/* 사이즈 */}
+                                                <col style={{ width: '8%' }} />   {/* 색상 */}
+                                                <col style={{ width: '10%' }} />  {/* 단가 */}
+                                                <col style={{ width: '10%' }} />  {/* 소형인쇄 */}
+                                                <col style={{ width: '10%' }} />  {/* 대형인쇄 */}
+                                                <col style={{ width: '10%' }} />  {/* 특대형인쇄 */}
+                                                <col style={{ width: '10%' }} />  {/* 디자인작업 */}
+                                                <col style={{ width: '8%' }} />   {/* 소계 */}
+                                                <col style={{ width: '5%' }} />   {/* 관리 */}
+                                            </colgroup>
                                             <thead>
                                                 <tr className="bg-gray-100 dark:bg-gray-700">
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">No.</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">상품명</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">수량</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">사이즈</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">색상</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">단가</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">소형인쇄</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">대형인쇄</th>                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">특대형인쇄</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">디자인작업</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">소계</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">관리</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">No.</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">상품명</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">수량</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">사이즈</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">색상</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">단가</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">소형인쇄</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">대형인쇄</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">특대형인쇄</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">디자인작업</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">소계</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">관리</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
