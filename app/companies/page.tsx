@@ -73,7 +73,16 @@ export default function CompaniesPage() {
       return;
     }
 
-    const companyId = `comp-${new Date().getTime().toString().slice(-6)}`;
+    // 순차 번호 기반 회사 ID 생성
+    const maxCompanyNumber = companies.reduce((max, company) => {
+      const match = company.id.match(/^COMP-(\d+)$/);
+      if (match) {
+        return Math.max(max, parseInt(match[1]));
+      }
+      return max;
+    }, 0);
+    
+    const companyId = `COMP-${String(maxCompanyNumber + 1).padStart(3, '0')}`;
     const company = {
       id: companyId,
       name: newCompany.name,
@@ -151,7 +160,18 @@ export default function CompaniesPage() {
       return;
     }
 
-    const productId = `prod-${selectedCompany.id}-${new Date().getTime().toString().slice(-6)}`;
+    // 회사별 순차 번호 기반 제품 ID 생성
+    const maxProductNumber = selectedCompany.products.reduce((max, product) => {
+      const companyPrefix = selectedCompany.id.replace('COMP-', 'COMP');
+      const match = product.id.match(new RegExp(`^${companyPrefix}-(\\d+)$`));
+      if (match) {
+        return Math.max(max, parseInt(match[1]));
+      }
+      return max;
+    }, 0);
+    
+    const companyPrefix = selectedCompany.id.replace('COMP-', 'COMP');
+    const productId = `${companyPrefix}-${String(maxProductNumber + 1).padStart(3, '0')}`;
     const product = {
       id: productId,
       name: newProduct.name,

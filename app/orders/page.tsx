@@ -124,11 +124,17 @@ const OrdersPage: React.FC = () => {
 
     // 새 주문 추가
     const handleAddOrder = async (orderData: Partial<Order>) => {
-        // UUID 기반 고유 ID 생성
+        // 순차 번호 기반 고유 ID 생성
         const generateOrderId = () => {
-            const timestamp = Date.now();
-            const random = Math.random().toString(36).substr(2, 9);
-            return `ORD-${timestamp}-${random}`.toUpperCase();
+            const maxOrderNumber = orders.reduce((max, order) => {
+                const match = order.id.match(/^ORD-(\d+)$/);
+                if (match) {
+                    return Math.max(max, parseInt(match[1]));
+                }
+                return max;
+            }, 0);
+            
+            return `ORD-${String(maxOrderNumber + 1).padStart(3, '0')}`;
         };
 
         const newOrder: Order = {
