@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getRelatedLinks, addRelatedLink, deleteRelatedLink } from '../lib/supabase';
+import { getRelatedLinks, addRelatedLink, deleteRelatedLink } from '../../lib/supabase';
 
 // 관련 링크 타입 정의
 interface RelatedLink {

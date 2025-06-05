@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useState } from 'react';
-import OrderFormModal from './components/OrderFormModal';
-import RelatedLinks from './components/RelatedLinks';
+import OrderFormModal from './components/order/OrderFormModal';
+import RelatedLinks from './components/common/RelatedLinks';
 import { Order } from './models/orderTypes';
 import { addOrder } from './lib/supabase';
 

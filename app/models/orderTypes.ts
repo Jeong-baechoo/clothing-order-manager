@@ -1,4 +1,6 @@
-'use client';
+// =============================================================================
+// CORE BUSINESS TYPES
+// =============================================================================
 
 // 회사 타입 정의
 export interface Company {
@@ -15,6 +17,27 @@ export interface Product {
     wholesalePrice?: number;
 }
 
+// 제품 정보 (데이터베이스 정규화용)
+export interface ProductInfo {
+    id: string;
+    name: string;
+    default_price: number;
+    wholesale_price?: number;
+    companies?: {
+        name: string;
+    };
+}
+
+// =============================================================================
+// ORDER TYPES
+// =============================================================================
+
+// 주문 상태 타입
+export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+
+// 결제 방법 타입
+export type PaymentMethod = '신용카드' | '무통장입금' | '계좌이체' | '현금' | '기타';
+
 // 주문 항목 타입 정의
 export interface OrderItem {
     id: string;
@@ -30,15 +53,7 @@ export interface OrderItem {
     extraLargePrintingPrice?: number;
     designWorkQuantity?: number;
     designWorkPrice?: number;
-    productInfo?: {
-        id: string;
-        name: string;
-        default_price: number;
-        wholesale_price?: number;
-        companies?: {
-            name: string;
-        };
-    };
+    productInfo?: ProductInfo; // 정규화된 제품 정보
 }
 
 // 주문 타입 정의

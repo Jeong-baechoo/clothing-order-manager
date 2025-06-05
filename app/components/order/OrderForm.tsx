@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Order, OrderItem } from '../models/orderTypes';
+import { Order, OrderItem } from '../../models/orderTypes';
 import ProductSelectionModal from './ProductSelectionModal';
 
 interface OrderFormProps {

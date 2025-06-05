@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Order, OrderItem } from '../models/orderTypes';
+import { Order, OrderItem } from '../../models/orderTypes';
 
 interface OrderStatisticsProps {
     orders: Order[];

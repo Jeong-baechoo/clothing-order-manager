@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getCompanies } from '../lib/supabase';
+import { getCompanies } from '../../lib/supabase';
 
 interface Product {
     id: string;

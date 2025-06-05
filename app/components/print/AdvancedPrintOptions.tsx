@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Order } from '../models/orderTypes';
-import { isBrowser, loadHtml2Pdf, getDefaultPdfOptions } from '../utils/pdf-utils';
+import { Order } from '../../models/orderTypes';
+import { isBrowser, loadHtml2Pdf, getDefaultPdfOptions } from '../../utils/pdf-utils';
 
 interface AdvancedPrintOptionsProps {
   order: Order;

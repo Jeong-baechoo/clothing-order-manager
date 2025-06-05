@@ -1,6 +1,6 @@
 'use client';
 
-import { Order } from '../models/orderTypes';
+import { Order } from '../../models/orderTypes';
 
 interface OrderExportProps {
     orders: Order[];

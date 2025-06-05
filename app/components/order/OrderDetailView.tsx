@@ -1,7 +1,7 @@
 'use client';
 
-import { Order } from '../models/orderTypes';
-import AdvancedPrintOptions from './AdvancedPrintOptions';
+import { Order } from '../../models/orderTypes';
+import AdvancedPrintOptions from '../print/AdvancedPrintOptions';
 import Image from 'next/image';
 
 interface OrderDetailProps {

@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import OrderDetailView from '../components/OrderDetailView';
-import OrderStatistics from '../components/OrderStatistics';
-import OrderExport from '../components/OrderExport';
-import ConfirmDialog from '../components/ConfirmDialog';
-import OrderFormModal from '../components/OrderFormModal';
+import OrderDetailView from '../components/order/OrderDetailView';
+import OrderStatistics from '../components/order/OrderStatistics';
+import OrderExport from '../components/order/OrderExport';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
+import OrderFormModal from '../components/order/OrderFormModal';
 import { Order, getStatusColor, orderStatusMap } from '../models/orderTypes';
 import { getOrders, addOrder, updateOrder, deleteOrder, updateOrderStatus } from '../lib/supabase';
 
