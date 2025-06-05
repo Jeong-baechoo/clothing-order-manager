@@ -141,27 +141,28 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
     const calculateItemTotal = useCallback((item: OrderItem): number => {
         const quantity = Math.max(0, Number(item.quantity) || 0);
         const price = Math.max(0, Number(item.price) || 0);
-        let itemTotal = price * quantity;
+        
+        // 프린팅 비용 계산 (개당 비용)
+        let printingCostPerItem = 0;
+        printingCostPerItem += Math.max(0, Number(item.smallPrintingQuantity) || 0) * 1500;
+        printingCostPerItem += Math.max(0, Number(item.largePrintingQuantity) || 0) * 3000;
 
-        // 프린팅 비용 추가
-        itemTotal += Math.max(0, Number(item.smallPrintingQuantity) || 0) * 1500;
-        itemTotal += Math.max(0, Number(item.largePrintingQuantity) || 0) * 3000;
-
-        // 특대형 프린팅
+        // 특대형 프린팅 (개당 비용)
         const extraLargeQty = Math.max(0, Number(item.extraLargePrintingQuantity) || 0);
         const extraLargePrice = Math.max(0, Number(item.extraLargePrintingPrice) || 0);
         if (extraLargeQty > 0 && extraLargePrice > 0) {
-            itemTotal += extraLargeQty * extraLargePrice;
+            printingCostPerItem += extraLargeQty * extraLargePrice;
         }
 
-        // 디자인 작업
+        // 디자인 작업 (개당 비용)
         const designQty = Math.max(0, Number(item.designWorkQuantity) || 0);
         const designPrice = Math.max(0, Number(item.designWorkPrice) || 0);
         if (designQty > 0 && designPrice > 0) {
-            itemTotal += designQty * designPrice;
+            printingCostPerItem += designQty * designPrice;
         }
 
-        return itemTotal;
+        // (옷값 + 프린팅합산값) * 수량
+        return (price + printingCostPerItem) * quantity;
     }, []);
 
     // 총 주문 금액 계산
@@ -435,20 +436,9 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                             <div className="p-6">
                                 {orderData.items && orderData.items.length > 0 ? (
                                     <div className="overflow-x-auto max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg min-h-96">
-                                        <table className="w-full border-collapse border border-gray-300 dark:border-gray-600" style={{tableLayout: 'fixed'}}>
+                                        <table className="w-full border-collapse border border-gray-300 dark:border-gray-600" style={{tableLayout: 'fixed', minWidth: '1390px'}}>
                                             <colgroup>
-                                                <col style={{ width: '2%' }} />   {/* No. */}
-                                                <col style={{ width: '15%' }} />  {/* 상품명 */}
-                                                <col style={{ width: '6%' }} />   {/* 수량 */}
-                                                <col style={{ width: '8%' }} />   {/* 사이즈 */}
-                                                <col style={{ width: '8%' }} />   {/* 색상 */}
-                                                <col style={{ width: '10%' }} />  {/* 단가 */}
-                                                <col style={{ width: '10%' }} />  {/* 소형인쇄 */}
-                                                <col style={{ width: '10%' }} />  {/* 대형인쇄 */}
-                                                <col style={{ width: '10%' }} />  {/* 특대형인쇄 */}
-                                                <col style={{ width: '10%' }} />  {/* 디자인작업 */}
-                                                <col style={{ width: '8%' }} />   {/* 소계 */}
-                                                <col style={{ width: '5%' }} />   {/* 관리 */}
+                                                <col style={{ width: '50px' }} /><col style={{ width: '200px' }} /><col style={{ width: '80px' }} /><col style={{ width: '100px' }} /><col style={{ width: '100px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '140px' }} /><col style={{ width: '140px' }} /><col style={{ width: '120px' }} /><col style={{ width: '100px' }} />
                                             </colgroup>
                                             <thead className="sticky top-0 bg-gray-100 dark:bg-gray-700 z-10">
                                                 <tr className="bg-gray-100 dark:bg-gray-700">
@@ -472,19 +462,19 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                         <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center font-medium">
                                                             {index + 1}
                                                         </td>
-                                                        <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                                                            <div className="flex space-x-2">
+                                                        <td className="border border-gray-300 dark:border-gray-600 px-2 py-2">
+                                                            <div className="w-full">
                                                                 <input
                                                                     type="text"
                                                                     value={item.product || ''}
                                                                     onChange={(e) => handleItemChange(index, 'product', e.target.value)}
-                                                                    placeholder="상품명 직접 입력"
-                                                                    className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
+                                                                    placeholder="상품명"
+                                                                    className="w-full px-1 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-xs focus:ring-1 focus:ring-blue-500 mb-1"
                                                                 />
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => openProductSelection(index)}
-                                                                    className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors whitespace-nowrap"
+                                                                    className="w-full px-1 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
                                                                     title="등록된 상품에서 선택"
                                                                 >
                                                                     선택
