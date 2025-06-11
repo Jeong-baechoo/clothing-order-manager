@@ -137,10 +137,9 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         }));
     }, [orderData.items]);
 
-    // 개별 상품 총액 계산
-    const calculateItemTotal = useCallback((item: OrderItem): number => {
-        const quantity = Math.max(0, Number(item.quantity) || 0);
-        const price = Math.max(0, Number(item.price) || 0);
+    // 개별 항목의 단가 계산 (기본가 + 프린팅 + 디자인)
+    const calculateUnitPrice = useCallback((item: OrderItem): number => {
+        const basePrice = Math.max(0, Number(item.price) || 0);
         
         // 프린팅 비용 계산 (개당 비용)
         let printingCostPerItem = 0;
@@ -161,9 +160,15 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
             printingCostPerItem += designQty * designPrice;
         }
 
-        // (옷값 + 프린팅합산값) * 수량
-        return (price + printingCostPerItem) * quantity;
+        return basePrice + printingCostPerItem;
     }, []);
+
+    // 개별 상품 총액 계산
+    const calculateItemTotal = useCallback((item: OrderItem): number => {
+        const quantity = Math.max(0, Number(item.quantity) || 0);
+        const unitPrice = calculateUnitPrice(item);
+        return unitPrice * quantity;
+    }, [calculateUnitPrice]);
 
     // 총 주문 금액 계산
     const calculateTotalPrice = useCallback((): number => {
@@ -436,9 +441,9 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                             <div className="p-6">
                                 {orderData.items && orderData.items.length > 0 ? (
                                     <div className="overflow-x-auto max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg min-h-96">
-                                        <table className="w-full border-collapse border border-gray-300 dark:border-gray-600" style={{tableLayout: 'fixed', minWidth: '1390px'}}>
+                                        <table className="w-full border-collapse border border-gray-300 dark:border-gray-600" style={{tableLayout: 'fixed', minWidth: '1510px'}}>
                                             <colgroup>
-                                                <col style={{ width: '50px' }} /><col style={{ width: '200px' }} /><col style={{ width: '80px' }} /><col style={{ width: '100px' }} /><col style={{ width: '100px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '140px' }} /><col style={{ width: '140px' }} /><col style={{ width: '120px' }} /><col style={{ width: '100px' }} />
+                                                <col style={{ width: '50px' }} /><col style={{ width: '200px' }} /><col style={{ width: '80px' }} /><col style={{ width: '100px' }} /><col style={{ width: '100px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '140px' }} /><col style={{ width: '140px' }} /><col style={{ width: '120px' }} /><col style={{ width: '100px' }} />
                                             </colgroup>
                                             <thead className="sticky top-0 bg-gray-100 dark:bg-gray-700 z-10">
                                                 <tr className="bg-gray-100 dark:bg-gray-700">
@@ -447,12 +452,13 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">수량</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">사이즈</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">색상</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">단가</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">의류 단가</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">소형인쇄</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">대형인쇄</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">특대형인쇄</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">디자인작업</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">소계</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">단가</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">총 금액</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">관리</th>
                                                 </tr>
                                             </thead>
@@ -592,7 +598,11 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                                     className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
                                                                 />
                                                             </div>
-                                                        </td>                                                        <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right font-semibold text-blue-600">
+                                                        </td>
+                                                        <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right font-semibold text-green-600">
+                                                            {calculateUnitPrice(item).toLocaleString()}원
+                                                        </td>
+                                                        <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right font-semibold text-blue-600">
                                                             {calculateItemTotal(item).toLocaleString()}원
                                                         </td>
                                                         <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
