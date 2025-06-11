@@ -25,7 +25,7 @@ body {
 
   /* 페이지 설정 */
   @page {
-    margin: 0.5cm;
+    margin: 0.3cm;
     size: A4;
   }
 
@@ -71,6 +71,17 @@ body {
     -webkit-print-color-adjust: exact !important;
     color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+  
+  /* 주문번호 박스 인쇄 시 스타일 유지 */
+  .print\:bg-gray-800 {
+    background-color: #1f2937 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  .print\:text-white {
+    color: #ffffff !important;
   }
 
   /* 페이지 나누기 방지 */

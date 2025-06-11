@@ -1,0 +1,38 @@
+[
+  {
+    "id": "ORD-002",
+    "customer_name": "김근태(SLOTH RIDERS)",
+    "phone": "010-8327-1246",
+    "address": "충북 청주시 청원구 오창읍 오창중앙로 27 코아루 308동 1306호",
+    "status": "pending",
+    "order_date": "2025-06-05",
+    "payment_method": "신용카드",
+    "total_price": 390000,
+    "created_at": "2025-06-05T11:57:51.196487+00:00",
+    "updated_at": "2025-06-05T17:30:43.533555+00:00"
+  },
+  {
+    "id": "ORD-1749430989292",
+    "customer_name": "김효리",
+    "phone": "010-6306-6416",
+    "address": "경기도 의정부시 호암로 256 신일유토빌108동 1801호",
+    "status": "pending",
+    "order_date": "2025-06-09",
+    "payment_method": "계좌이체",
+    "total_price": 285000,
+    "created_at": "2025-06-09T01:03:09.851105+00:00",
+    "updated_at": "2025-06-09T01:03:46.545137+00:00"
+  },
+  {
+    "id": "ORD-001",
+    "customer_name": "김무성(TEAM 911)",
+    "phone": "010-3906-8732",
+    "address": "울산 남구 돋질로 124-1 백마모터스",
+    "status": "pending",
+    "order_date": "2025-06-04",
+    "payment_method": "계좌이체",
+    "total_price": 575000,
+    "created_at": "2025-06-04T10:18:48.652614+00:00",
+    "updated_at": "2025-06-09T01:10:14.566413+00:00"
+  }
+]

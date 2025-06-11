@@ -13,18 +13,6 @@ export default function OrderDetailView({ order, onClose }: OrderDetailProps) {
     // 현재 날짜 구하기
     const currentDate = new Date().toLocaleDateString('ko-KR');
 
-    // 주문 상태 한글 변환
-    const getStatusText = (status: string) => {
-        switch (status) {
-            case 'pending': return '대기중';
-            case 'processing': return '처리중';
-            case 'shipped': return '배송중';
-            case 'delivered': return '배송완료';
-            case 'cancelled': return '취소됨';
-            default: return status;
-        }
-    };
-
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 print:bg-white print:block">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-5xl w-full max-h-[95vh] overflow-y-auto print:max-h-none print:shadow-none print:rounded-none print:w-auto print:max-w-none">
@@ -44,113 +32,114 @@ export default function OrderDetailView({ order, onClose }: OrderDetailProps) {
 
                     <AdvancedPrintOptions order={order}>
                         {/* PDF 최적화를 위한 추가 스타일 컨테이너 */}
-                        <div className="print:text-black print:bg-white" style={{ pageBreakInside: 'avoid' }}>
+                        <div className="flex flex-col invoice-container bg-white" style={{ pageBreakInside: 'avoid', minHeight: '297mm' }}>
 
                             {/* 인보이스 헤더 */}
-                            <div className="border-b-4 border-blue-600 pb-4 mb-6 print:pb-3 print:mb-4 print:border-b-2" style={{ pageBreakAfter: 'avoid' }}>
-                                <div className="flex justify-between items-start">                                <div>                                <div className="flex items-center gap-4 mb-2">                                        <div className="relative">
-                                    <Image
-                                        src="/images/caelum-logo-transparent.png"
-                                        alt="Caelum Logo"
-                                        className="h-16 w-auto print:h-14 object-contain"
-                                        style={{
-                                            maxWidth: '120px',
-                                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
-                                        }}
-                                        width={120}
-                                        height={80}
-                                        priority={true}
-                                        onError={(e) => console.error('Logo load error:', e)}
-                                        onLoad={() => console.log('Logo loaded successfully')}
-                                    />
-                                </div>
-
-                                </div>
-                                </div>
+                            <div className="mb-6" style={{ pageBreakAfter: 'avoid' }}>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <div className="mb-4">
+                                            <Image
+                                                src="/images/KakaoTalk_20250604_192242063_01.png"
+                                                alt="Caelum Logo"
+                                                className="h-20 w-auto object-contain"
+                                                style={{
+                                                    maxWidth: '150px',
+                                                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+                                                }}
+                                                width={120}
+                                                height={80}
+                                                priority={true}
+                                                onError={(e) => console.error('Logo load error:', e)}
+                                                onLoad={() => console.log('Logo loaded successfully')}
+                                            />
+                                        </div>
+                                        <div className="text-sm text-gray-600 space-y-1">
+                                            <p>경북 구미시 송선로 420</p>
+                                            <p>연락처: 010-5789-6891</p>
+                                            <p>E-mail: caelum2022@daum.net</p>
+                                        </div>
+                                    </div>
                                     <div className="text-right">
-                                        <h2 className="text-3xl font-bold text-blue-600 print:text-2xl print:text-black">주문서</h2>
-                                        <p className="text-lg text-gray-600 print:text-base print:text-black">ORDER INVOICE</p>
-                                        <div className="mt-3 print:mt-2 space-y-1 text-sm">
-                                            <p><span className="font-medium">주문번호:</span> #{order.id}</p>
+                                        <h1 className="text-4xl font-bold text-gray-800 mb-3">INVOICE</h1>
+                                        <div className="inline-flex items-center bg-gray-100 rounded-md px-4 py-2 mb-4" style={{ minHeight: '40px' }}>
+                                            <span className="text-sm text-gray-600 mr-2" style={{ color: '#4B5563' }}>주문번호</span>
+                                            <span className="text-lg font-bold text-gray-800" style={{ color: '#1F2937', fontSize: '1.125rem', fontWeight: 'bold' }}>#{order.id}</span>
+                                        </div>
+                                        <div className="space-y-1 text-sm text-gray-600">
                                             <p><span className="font-medium">발행일:</span> {currentDate}</p>
+                                            <p><span className="font-medium">만기일:</span> {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('ko-KR')}</p>
                                         </div>
                                     </div>
                                 </div>
+                                <div className="border-b-2 border-gray-300"></div>
                             </div>
 
                             {/* 고객 정보와 주문 정보 */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 print:gap-4 print:mb-4" style={{ pageBreakInside: 'avoid' }}>
-                                {/* 고객 정보 */}
-                                <div className="bg-gray-50 p-4 rounded-lg print:bg-white print:border print:border-gray-300 print:p-3">
-                                    <h3 className="text-lg font-semibold text-gray-800 mb-3 print:text-base print:mb-2 print:text-black">고객 정보</h3>
-                                    <div className="space-y-2 text-sm">
-                                        <div className="flex">
-                                            <span className="font-medium text-gray-600 w-16 print:text-black">이름:</span>
-                                            <span className="text-gray-800 print:text-black">{order.customerName}</span>
-                                        </div>
-                                        <div className="flex">
-                                            <span className="font-medium text-gray-600 w-16 print:text-black">전화:</span>
-                                            <span className="text-gray-800 print:text-black">{order.phone}</span>
-                                        </div>
-                                        <div className="flex">
-                                            <span className="font-medium text-gray-600 w-16 print:text-black">주소:</span>
-                                            <span className="text-gray-800 print:text-black">{order.address}</span>
-                                        </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8" style={{ pageBreakInside: 'avoid' }}>
+                                {/* 청구 정보 */}
+                                <div>
+                                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">BILL TO</h3>
+                                    <div className="text-sm space-y-1">
+                                        <p className="font-semibold text-base text-gray-800">{order.customerName}</p>
+                                        <p className="text-gray-600">{order.phone}</p>
+                                        <p className="text-gray-600">{order.address}</p>
                                     </div>
                                 </div>
 
                                 {/* 주문 정보 */}
-                                <div className="bg-blue-50 p-4 rounded-lg print:bg-white print:border print:border-gray-300 print:p-3">
-                                    <h3 className="text-lg font-semibold text-gray-800 mb-3 print:text-base print:mb-2 print:text-black">주문 정보</h3>
+                                <div>
+                                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">INVOICE DETAILS</h3>
                                     <div className="space-y-2 text-sm">
-                                        <div className="flex">
-                                            <span className="font-medium text-gray-600 w-20 print:text-black">주문일:</span>
-                                            <span className="text-gray-800 print:text-black">{new Date(order.orderDate).toLocaleDateString('ko-KR')}</span>
+                                        <div className="flex justify-between gap-4">
+                                            <span className="text-gray-600 flex-shrink-0">Invoice Date:</span>
+                                            <span className="font-medium text-gray-800 text-right">{currentDate}</span>
                                         </div>
-                                        <div className="flex">
-                                            <span className="font-medium text-gray-600 w-20 print:text-black">상태:</span>
-                                            <span className="text-gray-800 print:text-black">{getStatusText(order.status)}</span>
+                                        <div className="flex justify-between gap-4">
+                                            <span className="text-gray-600 flex-shrink-0">Order Date:</span>
+                                            <span className="font-medium text-gray-800 text-right">{new Date(order.orderDate).toLocaleDateString('ko-KR')}</span>
                                         </div>
-                                        <div className="flex">
-                                            <span className="font-medium text-gray-600 w-20 print:text-black">결제방법:</span>
-                                            <span className="text-gray-800 print:text-black">{order.paymentMethod}</span>
+                                        <div className="flex justify-between gap-4">
+                                            <span className="text-gray-600 flex-shrink-0">결제 방식:</span>
+                                            <span className="font-medium text-gray-800 text-right">{order.paymentMethod}</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* 주문 상품 목록 */}
-                            <div className="mb-6 print:mb-4" style={{ pageBreakInside: 'avoid' }}>
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4 print:text-base print:mb-2 print:text-black">주문 상품</h3>
+                            <div className="mb-8 flex-grow" style={{ pageBreakInside: 'avoid' }}>
                                 <div className="overflow-x-auto">
-                                    <table className="w-full border-collapse border border-gray-300 text-sm">
+                                    <table className="w-full text-sm">
                                         <thead>
-                                            <tr className="bg-gray-100 print:bg-gray-50">
-                                                <th className="border border-gray-300 px-3 py-2 text-left print:px-2 print:py-1 print:text-black">상품명</th>
-                                                <th className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">크기</th>
-                                                <th className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">색상</th>
-                                                <th className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">수량</th>
-                                                <th className="border border-gray-300 px-3 py-2 text-right print:px-2 print:py-1 print:text-black">단가</th>
-                                                <th className="border border-gray-300 px-3 py-2 text-right print:px-2 print:py-1 print:text-black">소계</th>
+                                            <tr className="border-b-2 border-gray-800">
+                                                <th className="text-left py-3 px-2 font-semibold text-gray-800">DESCRIPTION</th>
+                                                <th className="text-center py-3 px-2 font-semibold text-gray-800">SIZE</th>
+                                                <th className="text-center py-3 px-2 font-semibold text-gray-800">COLOR</th>
+                                                <th className="text-center py-3 px-2 font-semibold text-gray-800">QTY</th>
+                                                <th className="text-right py-3 px-2 font-semibold text-gray-800">UNIT PRICE</th>
+                                                <th className="text-right py-3 px-2 font-semibold text-gray-800">AMOUNT</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {order.items.map((item, index) => (
-                                                <tr key={index} className="hover:bg-gray-50 print:hover:bg-transparent" style={{ pageBreakInside: 'avoid' }}>
-                                                    <td className="border border-gray-300 px-3 py-2 print:px-2 print:py-1 print:text-black">
-                                                        {item.productInfo?.name || item.product}
+                                                <tr key={index} className="border-b border-gray-200 hover:bg-gray-50" style={{ pageBreakInside: 'avoid' }}>
+                                                    <td className="py-4 px-2 text-left">
+                                                        <div className="font-medium text-gray-800">
+                                                            {item.productInfo?.name || item.product}
+                                                        </div>
                                                         {item.productInfo?.companies?.name && (
-                                                            <div className="text-xs text-gray-500 print:text-gray-600">
+                                                            <div className="text-xs text-gray-500 mt-1">
                                                                 {item.productInfo.companies.name}
                                                             </div>
                                                         )}
                                                     </td>
-                                                    <td className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">{item.size}</td>
-                                                    <td className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">{item.color}</td>
-                                                    <td className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">{item.quantity}</td>
-                                                    <td className="border border-gray-300 px-3 py-2 text-right print:px-2 print:py-1 print:text-black">{item.price.toLocaleString()}원</td>
-                                                    <td className="border border-gray-300 px-3 py-2 text-right font-medium print:px-2 print:py-1 print:text-black">
-                                                        {(item.quantity * item.price).toLocaleString()}원
+                                                    <td className="py-4 px-2 text-center text-gray-700">{item.size}</td>
+                                                    <td className="py-4 px-2 text-center text-gray-700">{item.color}</td>
+                                                    <td className="py-4 px-2 text-center text-gray-700">{item.quantity}</td>
+                                                    <td className="py-4 px-2 text-right text-gray-700">₩{item.price.toLocaleString()}</td>
+                                                    <td className="py-4 px-2 text-right font-medium text-gray-800">
+                                                        ₩{(item.quantity * item.price).toLocaleString()}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -160,25 +149,25 @@ export default function OrderDetailView({ order, onClose }: OrderDetailProps) {
                             </div>
 
                             {/* 총액 요약 */}
-                            <div className="border-t-2 border-gray-300 pt-4 print:pt-2 print:border-t" style={{ pageBreakInside: 'avoid' }}>
-                                <div className="flex justify-between items-center">
-                                    <div>
-                                        <p className="text-sm text-gray-600 print:text-black">총 {order.items.length}개 상품</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-2xl font-bold text-blue-600 print:text-xl print:text-black">
-                                            총 금액: {order.totalPrice.toLocaleString()}원
+                            <div className="border-t-2 border-gray-300 pt-6 mb-8" style={{ pageBreakInside: 'avoid' }}>
+                                <div className="flex justify-end">
+                                    <div className="w-full md:w-1/3">
+                                        <div className="border-t-2 border-gray-800 pt-2">
+                                            <div className="flex justify-between">
+                                                <span className="text-lg font-bold text-gray-800">TOTAL:</span>
+                                                <span className="text-lg font-bold text-gray-800">₩{order.totalPrice.toLocaleString()}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* 푸터 */}
-                            <div className="mt-8 pt-4 border-t border-gray-200 print:mt-6 print:pt-3 print:border-gray-300" style={{ pageBreakInside: 'avoid' }}>
-                                <div className="flex justify-between items-end text-xs text-gray-500 print:text-black">
-                                    <div>
-                                        <p>본 주문서는 {currentDate}에 발행되었습니다.</p>
-                                        <p className="mt-1">Caelum 의류 주문 관리 시스템</p>
+                            <div className="mt-auto" style={{ pageBreakInside: 'avoid' }}>
+                                <div className="border-t border-gray-200 pt-6 mt-4">
+                                    <div className="text-center text-xs text-gray-500">
+                                        <p>CAELUM</p>
+                                        <p className="mt-2">경북 구미시 송선로 420 | Tel: 010-5789-6891 | E-mail: caelum2022@daum.net</p>
                                     </div>
                                 </div>
                             </div>

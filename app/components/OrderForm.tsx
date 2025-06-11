@@ -93,7 +93,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
     // 상품 항목 추가 핸들러
     const handleAddItem = useCallback(() => {
         const newItem: OrderItem = {
-            id: `item-${Date.now()}-${(orderData.items?.length || 0) + 1}`,
+            id: '',
             product: '',
             quantity: 1,
             size: '',
@@ -141,7 +141,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
     const calculateItemTotal = useCallback((item: OrderItem): number => {
         const quantity = Math.max(0, Number(item.quantity) || 0);
         const price = Math.max(0, Number(item.price) || 0);
-        
+
         // 프린팅 비용 계산 (개당 비용)
         let printingCostPerItem = 0;
         printingCostPerItem += Math.max(0, Number(item.smallPrintingQuantity) || 0) * 1500;

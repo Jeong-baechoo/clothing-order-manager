@@ -3,6 +3,13 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Order } from '../models/orderTypes';
 import { isBrowser, loadHtml2Pdf, getDefaultPdfOptions } from '../utils/pdf-utils';
+import dynamic from 'next/dynamic';
+
+// Dynamically import React-PDF to avoid SSR issues
+const generateReactPDF = dynamic(() => 
+  import('../utils/pdf-utils-react').then(mod => mod.generateReactPDF),
+  { ssr: false }
+);
 
 interface AdvancedPrintOptionsProps {
   order: Order;
@@ -13,6 +20,10 @@ export default function AdvancedPrintOptions({ order, children }: AdvancedPrintO
   const printRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isClientSide, setIsClientSide] = useState(false);
+  
+  // Feature flag for PDF generator selection
+  const pdfGenerator = process.env.NEXT_PUBLIC_PDF_GENERATOR || 'legacy';
+  const [useReactPDF, setUseReactPDF] = useState(pdfGenerator === 'react');
 
   // Check if we're on the client side
   useEffect(() => {
@@ -33,6 +44,27 @@ export default function AdvancedPrintOptions({ order, children }: AdvancedPrintO
     setIsGenerating(true);
 
     try {
+      // Use React-PDF if selected
+      if (useReactPDF) {
+        console.log('Using React-PDF generator');
+        try {
+          // Always use direct import for now to debug
+          const { generateReactPDF: genPDF } = await import('../utils/pdf-utils-react');
+          console.log('React-PDF module loaded successfully');
+          await genPDF(order);
+          console.log('PDF generation completed');
+          alert('PDF가 성공적으로 생성되었습니다!');
+        } catch (error) {
+          console.error('React-PDF Error:', error);
+          alert(`React-PDF 오류: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+        }
+        setIsGenerating(false);
+        return;
+      }
+      
+      // Otherwise use legacy html2pdf
+      console.log('Using legacy html2pdf generator');
+      
       // 콘텐츠 렌더링 확인
       console.log('PDF 생성 시작: 내용 확인', {
         childrenCount: printRef.current.childNodes.length,
@@ -118,14 +150,17 @@ export default function AdvancedPrintOptions({ order, children }: AdvancedPrintO
         className="invoice-container bg-white p-8 max-w-4xl mx-auto"
         style={{
           // PDF 출력에 최적화된 스타일
-          fontFamily: 'Arial, sans-serif',
-          lineHeight: '1.5',
+          fontFamily: '"Malgun Gothic", "맑은 고딕", Arial, sans-serif',
+          lineHeight: '1.6',
           color: '#000000',
           display: 'block', // 반드시 화면에 표시되도록 설정
           visibility: 'visible', // 반드시 보이도록 설정
           position: 'relative', // stacking context 조정
           zIndex: 1, // 레이어 순서 보장
-          minHeight: '500px' // 최소 높이 설정
+          minHeight: '500px', // 최소 높이 설정
+          width: '100%',
+          maxWidth: '794px', // A4 width
+          margin: '0 auto'
         }}
       >
         {children}
@@ -142,6 +177,30 @@ export default function AdvancedPrintOptions({ order, children }: AdvancedPrintO
           </h3>          <p className="text-gray-600 mb-6">
             고품질 PDF 파일로 인보이스를 저장하세요. 인쇄와 보관에 최적화되어 있습니다.
           </p>
+          
+          {/* PDF Generator Toggle - Development Only */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useReactPDF}
+                  onChange={(e) => setUseReactPDF(e.target.checked)}
+                  className="sr-only"
+                />
+                <div className="relative">
+                  <div className={`block ${useReactPDF ? 'bg-blue-600' : 'bg-gray-300'} w-14 h-8 rounded-full`}></div>
+                  <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition ${useReactPDF ? 'transform translate-x-6' : ''}`}></div>
+                </div>
+                <div className="ml-3">
+                  <span className="text-sm font-medium text-gray-900">
+                    Use React-PDF {useReactPDF ? '(New)' : '(Legacy html2pdf)'}
+                  </span>
+                  <p className="text-xs text-gray-500">개발 모드에서만 표시됩니다</p>
+                </div>
+              </label>
+            </div>
+          )}
 
           <button
             onClick={generatePDF}
