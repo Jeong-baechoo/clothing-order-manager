@@ -111,13 +111,9 @@ export default function OrderExport({ orders }: OrderExportProps) {
             case 'pending':
                 return '대기중';
             case 'processing':
-                return '처리중';
-            case 'shipped':
-                return '배송중';
-            case 'delivered':
-                return '배송완료';
-            case 'cancelled':
-                return '취소됨';
+                return '작업중';
+            case 'completed':
+                return '완료';
             default:
                 return status;
         }

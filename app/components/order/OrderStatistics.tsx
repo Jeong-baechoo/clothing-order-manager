@@ -13,9 +13,7 @@ export default function OrderStatistics({ orders }: OrderStatisticsProps) {
         const totalOrders = orders.length;
         const pendingOrders = orders.filter(order => order.status === 'pending').length;
         const processingOrders = orders.filter(order => order.status === 'processing').length;
-        const shippedOrders = orders.filter(order => order.status === 'shipped').length;
-        const deliveredOrders = orders.filter(order => order.status === 'delivered').length;
-        const cancelledOrders = orders.filter(order => order.status === 'cancelled').length;
+        const completedOrders = orders.filter(order => order.status === 'completed').length;
 
         // 오늘 날짜 기준 최근 7일간의 주문
         const today = new Date();
@@ -65,9 +63,7 @@ export default function OrderStatistics({ orders }: OrderStatisticsProps) {
             totalOrders,
             pendingOrders,
             processingOrders,
-            shippedOrders,
-            deliveredOrders,
-            cancelledOrders,
+            completedOrders,
             recentOrders,
             mostOrderedProduct,
             maxCount,
@@ -118,8 +114,8 @@ export default function OrderStatistics({ orders }: OrderStatisticsProps) {
                             </svg>
                         </div>
                         <div className="ml-4">
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">배송완료 주문</p>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{statistics.deliveredOrders}</p>
+                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">완료 주문</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{statistics.completedOrders}</p>
                         </div>
                     </div>
                 </div>
@@ -158,7 +154,7 @@ export default function OrderStatistics({ orders }: OrderStatisticsProps) {
                     <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
                         <p className="text-sm text-gray-500 dark:text-gray-400">주문 현황</p>
                         <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{statistics.processingOrders}건</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">배송중 {statistics.shippedOrders}건 / 취소 {statistics.cancelledOrders}건</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">진행중</p>
                     </div>
                 </div>
             </div>

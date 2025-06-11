@@ -152,18 +152,18 @@ export default function OrderDetailView({ order, onClose }: OrderDetailProps) {
                                     <table className="w-full border-collapse border border-gray-300 text-sm">
                                         <thead>
                                             <tr className="bg-gray-100 print:bg-gray-50">
-                                                <th className="border border-gray-300 px-3 py-2 text-left print:px-2 print:py-1 print:text-black">상품명</th>
+                                                <th className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">상품명</th>
                                                 <th className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">크기</th>
                                                 <th className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">색상</th>
                                                 <th className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">수량</th>
-                                                <th className="border border-gray-300 px-3 py-2 text-right print:px-2 print:py-1 print:text-black">단가</th>
-                                                <th className="border border-gray-300 px-3 py-2 text-right print:px-2 print:py-1 print:text-black">소계</th>
+                                                <th className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">단가</th>
+                                                <th className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">상품 합계</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {order.items.map((item, index) => (
                                                 <tr key={index} className="hover:bg-gray-50 print:hover:bg-transparent" style={{ pageBreakInside: 'avoid' }}>
-                                                    <td className="border border-gray-300 px-3 py-2 print:px-2 print:py-1 print:text-black">
+                                                    <td className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">
                                                         {item.productInfo?.name || item.product}
                                                         {item.productInfo?.companies?.name && (
                                                             <div className="text-xs text-gray-500 print:text-gray-600">
@@ -174,8 +174,8 @@ export default function OrderDetailView({ order, onClose }: OrderDetailProps) {
                                                     <td className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">{item.size}</td>
                                                     <td className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">{item.color}</td>
                                                     <td className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">{item.quantity}</td>
-                                                    <td className="border border-gray-300 px-3 py-2 text-right print:px-2 print:py-1 print:text-black">{calculateUnitPrice(item).toLocaleString()}원</td>
-                                                    <td className="border border-gray-300 px-3 py-2 text-right font-medium print:px-2 print:py-1 print:text-black">
+                                                    <td className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">{calculateUnitPrice(item).toLocaleString()}원</td>
+                                                    <td className="border border-gray-300 px-3 py-2 text-center font-medium print:px-2 print:py-1 print:text-black">
                                                         {(item.quantity * calculateUnitPrice(item)).toLocaleString()}원
                                                     </td>
                                                 </tr>
@@ -193,7 +193,7 @@ export default function OrderDetailView({ order, onClose }: OrderDetailProps) {
                                     </div>
                                     <div className="text-right">
                                         <div className="text-2xl font-bold text-blue-600 print:text-xl print:text-black">
-                                            총 금액: {order.totalPrice.toLocaleString()}원
+                                            총 주문 금액: {order.totalPrice.toLocaleString()}원
                                         </div>
                                     </div>
                                 </div>

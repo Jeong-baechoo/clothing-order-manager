@@ -351,10 +351,8 @@ const OrdersPage: React.FC = () => {
                         >
                             <option value="all">모든 상태</option>
                             <option value="pending">대기중</option>
-                            <option value="processing">처리중</option>
-                            <option value="shipped">배송중</option>
-                            <option value="delivered">배송완료</option>
-                            <option value="cancelled">취소됨</option>
+                            <option value="processing">작업중</option>
+                            <option value="completed">완료</option>
                         </select>
                     </div>
                     <div className="w-full md:w-auto flex items-end">
@@ -449,10 +447,8 @@ const OrdersPage: React.FC = () => {
                                                     className="text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md"
                                                 >
                                                     <option value="pending">대기중</option>
-                                                    <option value="processing">처리중</option>
-                                                    <option value="shipped">배송중</option>
-                                                    <option value="delivered">배송완료</option>
-                                                    <option value="cancelled">취소됨</option>
+                                                    <option value="processing">작업중</option>
+                                                    <option value="completed">완료</option>
                                                 </select>
                                             </div>
                                         </td>

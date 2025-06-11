@@ -33,7 +33,7 @@ export interface ProductInfo {
 // =============================================================================
 
 // 주문 상태 타입
-export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending' | 'processing' | 'completed';
 
 // 결제 방법 타입
 export type PaymentMethod = '신용카드' | '무통장입금' | '계좌이체' | '현금' | '기타';
@@ -62,7 +62,7 @@ export interface Order {
     customerName: string;
     phone: string;
     address: string;
-    status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+    status: OrderStatus;
     orderDate: string;
     paymentMethod: string;
     items: OrderItem[];
@@ -72,10 +72,8 @@ export interface Order {
 // 주문 상태 한글 표시
 export const orderStatusMap = {
     pending: '대기중',
-    processing: '처리중',
-    shipped: '배송중',
-    delivered: '배송완료',
-    cancelled: '취소됨'
+    processing: '작업중',
+    completed: '완료'
 };
 
 // 주문 상태에 따른 배경색 지정
@@ -85,12 +83,8 @@ export const getStatusColor = (status: string) => {
             return 'bg-yellow-100 text-yellow-800';
         case 'processing':
             return 'bg-blue-100 text-blue-800';
-        case 'shipped':
-            return 'bg-purple-100 text-purple-800';
-        case 'delivered':
+        case 'completed':
             return 'bg-green-100 text-green-800';
-        case 'cancelled':
-            return 'bg-red-100 text-red-800';
         default:
             return 'bg-gray-100 text-gray-800';
     }

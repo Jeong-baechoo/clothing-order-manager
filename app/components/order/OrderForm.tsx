@@ -703,11 +703,9 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                             onChange={handleChange}
                                             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
                                         >
-                                            <option value="pending">주문접수</option>
-                                            <option value="processing">제작중</option>
-                                            <option value="shipped">배송중</option>
-                                            <option value="delivered">배송완료</option>
-                                            <option value="cancelled">주문취소</option>
+                                            <option value="pending">대기중</option>
+                                            <option value="processing">작업중</option>
+                                            <option value="completed">완료</option>
                                         </select>
                                     </div>
                                 </div>
