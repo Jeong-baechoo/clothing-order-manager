@@ -25,6 +25,32 @@ export default function OrderDetailView({ order, onClose }: OrderDetailProps) {
         }
     };
 
+    // 개별 항목의 단가 계산 (기본가 + 프린팅 + 디자인)
+    const calculateUnitPrice = (item: typeof order.items[0]) => {
+        const basePrice = Number(item.price) || 0;
+        
+        // 프린팅 비용 계산 (개당 비용)
+        let printingCostPerItem = 0;
+        printingCostPerItem += Math.max(0, Number(item.smallPrintingQuantity) || 0) * 1500;
+        printingCostPerItem += Math.max(0, Number(item.largePrintingQuantity) || 0) * 3000;
+
+        // 특대형 프린팅 (개당 비용)
+        const extraLargeQty = Math.max(0, Number(item.extraLargePrintingQuantity) || 0);
+        const extraLargePrice = Math.max(0, Number(item.extraLargePrintingPrice) || 0);
+        if (extraLargeQty > 0 && extraLargePrice > 0) {
+            printingCostPerItem += extraLargeQty * extraLargePrice;
+        }
+
+        // 디자인 작업 (개당 비용)
+        const designQty = Math.max(0, Number(item.designWorkQuantity) || 0);
+        const designPrice = Math.max(0, Number(item.designWorkPrice) || 0);
+        if (designQty > 0 && designPrice > 0) {
+            printingCostPerItem += designQty * designPrice;
+        }
+
+        return basePrice + printingCostPerItem;
+    };
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 print:bg-white print:block">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-5xl w-full max-h-[95vh] overflow-y-auto print:max-h-none print:shadow-none print:rounded-none print:w-auto print:max-w-none">
@@ -148,9 +174,9 @@ export default function OrderDetailView({ order, onClose }: OrderDetailProps) {
                                                     <td className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">{item.size}</td>
                                                     <td className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">{item.color}</td>
                                                     <td className="border border-gray-300 px-3 py-2 text-center print:px-2 print:py-1 print:text-black">{item.quantity}</td>
-                                                    <td className="border border-gray-300 px-3 py-2 text-right print:px-2 print:py-1 print:text-black">{item.price.toLocaleString()}원</td>
+                                                    <td className="border border-gray-300 px-3 py-2 text-right print:px-2 print:py-1 print:text-black">{calculateUnitPrice(item).toLocaleString()}원</td>
                                                     <td className="border border-gray-300 px-3 py-2 text-right font-medium print:px-2 print:py-1 print:text-black">
-                                                        {(item.quantity * item.price).toLocaleString()}원
+                                                        {(item.quantity * calculateUnitPrice(item)).toLocaleString()}원
                                                     </td>
                                                 </tr>
                                             ))}
