@@ -134,7 +134,7 @@ export const generateInvoiceHTML = (order: Order): string => {
           background-color: #1a1a1a;
           color: white;
           margin: -30mm -15mm 15mm -15mm;
-          padding: 15mm 15mm 10mm 15mm;
+          padding: 15mm 15mm 15mm 15mm;
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -145,8 +145,9 @@ export const generateInvoiceHTML = (order: Order): string => {
         }
 
         header .logo {
-          height: 50px;
+          height: 66px;
           width: auto;
+          object-fit: contain;
           /*left: 50%;*/
         }
 
@@ -154,8 +155,26 @@ export const generateInvoiceHTML = (order: Order): string => {
           text-align: right;
           font-size: 12px;
           opacity: 0.9;
-          line-height: 1.4;
+          line-height: 1.3;
           margin-left: auto;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        
+        header .company-info p {
+          margin: 0;
+          padding: 5px 0;
+          line-height: 1.5;
+        }
+        
+        header .company-info p:first-child {
+          padding-top: 7px;
+        }
+        
+        header .company-info p:last-child {
+          margin-bottom: 0;
+          padding-bottom: 7px;
         }
 
         /* Main content */
@@ -177,6 +196,7 @@ export const generateInvoiceHTML = (order: Order): string => {
           font-size: 14px;
           font-weight: bold;
           margin-bottom: 8px;
+          margin-left: 5px;
           color: #000000;
         }
 
@@ -187,6 +207,7 @@ export const generateInvoiceHTML = (order: Order): string => {
         }
 
         .customer-info-row {
+          padding: 5px;
           display: flex;
         }
 
@@ -203,6 +224,7 @@ export const generateInvoiceHTML = (order: Order): string => {
 
         /* Total summary bar */
         .total-summary-bar {
+          visibility: hidden;
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -235,7 +257,7 @@ export const generateInvoiceHTML = (order: Order): string => {
           font-size: 14px;
           font-weight: bold;
           text-align: center;
-          padding-bottom: 4px;
+          padding: 5px 0;
           /* border-bottom: 1px solid #000; */
           color: #000000;
         }
@@ -283,7 +305,6 @@ export const generateInvoiceHTML = (order: Order): string => {
         .col-remarks {
           width: 15%;
           padding: 0 4px;
-          font-size: 12px;
         }
 
         /* Footer */
@@ -296,10 +317,11 @@ export const generateInvoiceHTML = (order: Order): string => {
         .final-summary {
           border-top: 2.5px solid black;
           border-bottom: 2.5px solid black;
-          padding: 8px 0;
+          padding: 12px 0;
           display: flex;
           justify-content: space-between;
-          align-items: center;
+          align-items: stretch;
+          min-height: 80px;
         }
 
         .notes-ea-container {
@@ -315,23 +337,29 @@ export const generateInvoiceHTML = (order: Order): string => {
           width: 45%;
           font-size: 12px;
           background-color: #f5f5f5;
-          padding: 10px;
           border-radius: 4px;
           color: #000000;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          padding: 12px;
+          gap: 8px;
         }
 
         .price-row {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 4px;
+          margin: 0;
+          padding: 0;
           color: #000000;
         }
 
         .price-row.total {
-          margin-top: 8px;
-          padding-top: 8px;
-          /* border-top: 2.5px solid black; */
+          margin: 0;
+          padding: 0;
+          /*padding-top: 8px;*/
+          /*border-top: 1px solid #ddd;*/
           font-weight: bold;
         }
 

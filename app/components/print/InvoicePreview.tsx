@@ -14,7 +14,15 @@ export default function InvoicePreview({ order }: InvoicePreviewProps) {
 
   useEffect(() => {
     if (iframeRef.current) {
-      const previewHTML = generateInvoiceHTML(order);
+      let previewHTML = generateInvoiceHTML(order);
+      
+      // Replace relative image paths with absolute URLs for preview
+      const baseUrl = window.location.origin;
+      previewHTML = previewHTML.replace(
+        'src="/images/caelum-logo-white.png"',
+        `src="${baseUrl}/images/caelum-logo-white.png"`
+      );
+      
       const blob = new Blob([previewHTML], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       
