@@ -124,17 +124,24 @@ const OrdersPage: React.FC = () => {
 
     // 새 주문 추가
     const handleAddOrder = async (orderData: Partial<Order>) => {
-        // 순차 번호 기반 고유 ID 생성
+        // 년도월 기반 고유 ID 생성
         const generateOrderId = () => {
-            const maxOrderNumber = orders.reduce((max, order) => {
-                const match = order.id.match(/^ORD-(\d+)$/);
+            const now = new Date();
+            const year = now.getFullYear().toString().slice(-2);
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const yearMonth = `${year}${month}`;
+            
+            const monthOrders = orders.filter(order => order.id.startsWith(`${yearMonth}-`));
+            
+            const maxOrderNumber = monthOrders.reduce((max, order) => {
+                const match = order.id.match(/^\d{4}-(\d+)$/);
                 if (match) {
                     return Math.max(max, parseInt(match[1]));
                 }
                 return max;
             }, 0);
             
-            return `ORD-${String(maxOrderNumber + 1).padStart(3, '0')}`;
+            return `${yearMonth}-${String(maxOrderNumber + 1).padStart(3, '0')}`;
         };
 
         const newOrder: Order = {
