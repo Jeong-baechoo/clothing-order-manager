@@ -11,6 +11,12 @@ const generateReactPDF = dynamic(() =>
   { ssr: false }
 );
 
+// Dynamically import HTML-PDF to avoid SSR issues
+const generateHTMLPDF = dynamic(() => 
+  import('../utils/pdf-utils-html').then(mod => mod.generateHTMLPDF),
+  { ssr: false }
+);
+
 interface AdvancedPrintOptionsProps {
   order: Order;
   children: React.ReactNode;
@@ -24,13 +30,14 @@ export default function AdvancedPrintOptions({ order, children }: AdvancedPrintO
   // Feature flag for PDF generator selection
   const pdfGenerator = process.env.NEXT_PUBLIC_PDF_GENERATOR || 'legacy';
   const [useReactPDF, setUseReactPDF] = useState(pdfGenerator === 'react');
+  const [useHTMLPDF, setUseHTMLPDF] = useState(true); // Use HTML PDF by default
 
   // Check if we're on the client side
   useEffect(() => {
     setIsClientSide(isBrowser());
   }, []);
   // html2pdf.js를 사용한 최적화된 PDF 생성
-  const generatePDF = async () => {
+  const generatePDF = async (preview: boolean = false) => {
     if (!printRef.current) {
       alert('인보이스 컨테이너를 찾을 수 없습니다.');
       return;
@@ -44,6 +51,25 @@ export default function AdvancedPrintOptions({ order, children }: AdvancedPrintO
     setIsGenerating(true);
 
     try {
+      // Use HTML-PDF if selected
+      if (useHTMLPDF) {
+        console.log('Using HTML-PDF generator');
+        try {
+          const { generateHTMLPDF: genPDF } = await import('../utils/pdf-utils-html');
+          console.log('HTML-PDF module loaded successfully');
+          await genPDF(order, preview);
+          console.log('PDF generation completed');
+          if (!preview) {
+            alert('PDF가 성공적으로 생성되었습니다!');
+          }
+        } catch (error) {
+          console.error('HTML-PDF Error:', error);
+          alert(`HTML-PDF 오류: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+        }
+        setIsGenerating(false);
+        return;
+      }
+      
       // Use React-PDF if selected
       if (useReactPDF) {
         console.log('Using React-PDF generator');
@@ -181,40 +207,91 @@ export default function AdvancedPrintOptions({ order, children }: AdvancedPrintO
           {/* PDF Generator Toggle - Development Only */}
           {process.env.NODE_ENV === 'development' && (
             <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={useReactPDF}
-                  onChange={(e) => setUseReactPDF(e.target.checked)}
-                  className="sr-only"
-                />
-                <div className="relative">
-                  <div className={`block ${useReactPDF ? 'bg-blue-600' : 'bg-gray-300'} w-14 h-8 rounded-full`}></div>
-                  <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition ${useReactPDF ? 'transform translate-x-6' : ''}`}></div>
-                </div>
-                <div className="ml-3">
+              <div className="space-y-2">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="pdfGenerator"
+                    checked={useHTMLPDF}
+                    onChange={() => {
+                      setUseHTMLPDF(true);
+                      setUseReactPDF(false);
+                    }}
+                    className="mr-2"
+                  />
                   <span className="text-sm font-medium text-gray-900">
-                    Use React-PDF {useReactPDF ? '(New)' : '(Legacy html2pdf)'}
+                    HTML to PDF (Invoice Template)
                   </span>
-                  <p className="text-xs text-gray-500">개발 모드에서만 표시됩니다</p>
-                </div>
-              </label>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="pdfGenerator"
+                    checked={useReactPDF}
+                    onChange={() => {
+                      setUseReactPDF(true);
+                      setUseHTMLPDF(false);
+                    }}
+                    className="mr-2"
+                  />
+                  <span className="text-sm font-medium text-gray-900">
+                    React-PDF (New)
+                  </span>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="pdfGenerator"
+                    checked={!useHTMLPDF && !useReactPDF}
+                    onChange={() => {
+                      setUseHTMLPDF(false);
+                      setUseReactPDF(false);
+                    }}
+                    className="mr-2"
+                  />
+                  <span className="text-sm font-medium text-gray-900">
+                    Legacy html2pdf
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500 mt-1">개발 모드에서만 표시됩니다</p>
+              </div>
             </div>
           )}
 
-          <button
-            onClick={generatePDF}
-            disabled={isGenerating || !isClientSide}
-            className={`
-              w-full md:w-auto px-8 py-3 rounded-lg font-medium transition-all duration-200
-              flex items-center justify-center space-x-2
-              ${isGenerating || !isClientSide
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-sm hover:shadow-md'
-              }
-              text-white
-            `}
-          >
+          <div className="flex flex-col md:flex-row gap-3">
+            <button
+              onClick={() => generatePDF(true)}
+              disabled={isGenerating || !isClientSide}
+              className={`
+                w-full md:w-auto px-6 py-3 rounded-lg font-medium transition-all duration-200
+                flex items-center justify-center space-x-2
+                ${isGenerating || !isClientSide
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-gray-600 hover:bg-gray-700 active:bg-gray-800 shadow-sm hover:shadow-md'
+                }
+                text-white
+              `}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <span>미리보기</span>
+            </button>
+            
+            <button
+              onClick={() => generatePDF(false)}
+              disabled={isGenerating || !isClientSide}
+              className={`
+                w-full md:w-auto px-8 py-3 rounded-lg font-medium transition-all duration-200
+                flex items-center justify-center space-x-2
+                ${isGenerating || !isClientSide
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-sm hover:shadow-md'
+                }
+                text-white
+              `}
+            >
             {isGenerating ? (
               <>
                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -239,6 +316,7 @@ export default function AdvancedPrintOptions({ order, children }: AdvancedPrintO
               </>
             )}
           </button>
+          </div>
 
           {/* 도움말 정보 */}
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
