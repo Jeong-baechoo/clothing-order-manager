@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Order } from '../../models/orderTypes';
-import { isBrowser, loadHtml2Pdf, getDefaultPdfOptions } from '../../utils/pdf-utils';
+import { isBrowser } from '../../utils/pdf-utils';
+import { generateHTMLPDF } from '../../utils/pdf-utils-html';
 
 interface AdvancedPrintOptionsProps {
   order: Order;
@@ -10,7 +11,6 @@ interface AdvancedPrintOptionsProps {
 }
 
 export default function AdvancedPrintOptions({ order, children }: AdvancedPrintOptionsProps) {
-  const printRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isClientSide, setIsClientSide] = useState(false);
 
@@ -18,13 +18,8 @@ export default function AdvancedPrintOptions({ order, children }: AdvancedPrintO
   useEffect(() => {
     setIsClientSide(isBrowser());
   }, []);
-  // html2pdf.js를 사용한 최적화된 PDF 생성
+  // HTML 기반 PDF 생성
   const generatePDF = async () => {
-    if (!printRef.current) {
-      alert('인보이스 컨테이너를 찾을 수 없습니다.');
-      return;
-    }
-
     if (!isClientSide) {
       alert('PDF 생성 모듈이 아직 로드되지 않았습니다. 잠시 후 다시 시도해 주세요.');
       return;
@@ -33,101 +28,24 @@ export default function AdvancedPrintOptions({ order, children }: AdvancedPrintO
     setIsGenerating(true);
 
     try {
-      // 콘텐츠 렌더링 확인
-      console.log('PDF 생성 시작: 내용 확인', {
-        childrenCount: printRef.current.childNodes.length,
-        innerHtml: printRef.current.innerHTML.substring(0, 100) + '...',
-        width: printRef.current.offsetWidth,
-        height: printRef.current.offsetHeight
-      });
-
-      // 이미지 로딩 대기
-      const images = printRef.current.querySelectorAll('img');
-      console.log(`이미지 ${images.length}개 발견, 로딩 대기 중...`);
-
-      const imagePromises = Array.from(images).map((img) => {
-        // 로그 추가
-        console.log('이미지 처리중:', img.src, '완료 상태:', img.complete);
-
-        return new Promise((resolve) => {
-          if (img.complete) {
-            console.log('이미지 이미 로드됨:', img.src);
-            resolve(img);
-          } else {
-            img.onload = () => {
-              console.log('이미지 로드 완료:', img.src);
-              resolve(img);
-            };
-            img.onerror = () => {
-              console.error('이미지 로드 오류:', img.src);
-              resolve(img); // 오류가 있어도 계속 진행
-            };
-          }
-        });
-      });
-
-      // 모든 이미지 로딩 완료 대기
-      await Promise.all(imagePromises);
-      console.log('모든 이미지 로딩 완료');
-      // 잠시 대기하여 렌더링 완료 보장
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('추가 렌더링 시간 대기 완료');
-      // html2pdf 모듈 로드
-      const html2pdfLib = await loadHtml2Pdf();
-      if (!html2pdfLib) {
-        throw new Error('PDF 생성 모듈을 로드할 수 없습니다.');
-      }
-      // 기본 PDF 옵션 가져오기
-      const options = getDefaultPdfOptions(order.id.toString());
-
-      // PDF 옵션에 로그 추가
-      console.log('PDF 옵션 구성 완료', options);
-
-      // 실제 PDF 생성 시작
-      console.log('PDF 생성 시작: html2pdf 호출');
-      try {
-        // html2pdf 생성
-        const worker = html2pdfLib()
-          .set(options) // 옵션 설정
-          .from(printRef.current);
-
-        console.log('PDF 생성 중: Worker 준비 완료');
-
-        // PDF 생성 및 저장
-        await worker.save();
-        console.log('PDF 생성 성공');
-
-        // 성공 메시지
-        alert('PDF가 성공적으로 생성되었습니다!');
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
-        console.error('PDF 생성 중 오류:', error);
-        alert(`PDF 생성 중 오류가 발생했습니다: ${errorMessage}`);
-      }
+      console.log('HTML 기반 PDF 생성 시작');
+      
+      // HTML 기반 PDF 생성
+      await generateHTMLPDF(order, false);
+      
+      console.log('PDF 생성 성공');
+      alert('PDF가 성공적으로 생성되었습니다!');
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
       console.error('PDF 생성 중 오류:', error);
-      alert('PDF 생성 중 오류가 발생했습니다. 다시 시도해 주세요.');
+      alert(`PDF 생성 중 오류가 발생했습니다: ${errorMessage}`);
     } finally {
       setIsGenerating(false);
     }
   }; return (
     <div>
-      {/* 인보이스 컨테이너 - PDF로 변환될 영역 */}
-      <div
-        ref={printRef}
-        className="invoice-container bg-white p-8 max-w-4xl mx-auto"
-        style={{
-          // PDF 출력에 최적화된 스타일
-          fontFamily: 'Arial, sans-serif',
-          lineHeight: '1.5',
-          color: '#000000',
-          display: 'block', // 반드시 화면에 표시되도록 설정
-          visibility: 'visible', // 반드시 보이도록 설정
-          position: 'relative', // stacking context 조정
-          zIndex: 1, // 레이어 순서 보장
-          minHeight: '500px' // 최소 높이 설정
-        }}
-      >
+      {/* 인보이스 미리보기 영역 */}
+      <div className="invoice-container bg-white max-w-4xl mx-auto">
         {children}
       </div>
 
@@ -190,10 +108,10 @@ export default function AdvancedPrintOptions({ order, children }: AdvancedPrintO
               PDF 생성 정보
             </h4>
             <ul className="text-sm text-gray-600 space-y-1">
-              <li>• Caelum 로고가 포함된 고품질 PDF로 생성됩니다</li>
+              <li>• HTML 템플릿 기반의 고품질 PDF로 생성됩니다</li>
               <li>• A4 용지 크기에 최적화되어 있습니다</li>
               <li>• 파일명: Invoice_{order.id}.pdf</li>
-              <li>• 이미지 품질: 고해상도 (98% 품질)</li>
+              <li>• 프로페셔널한 인보이스 디자인</li>
               <li>• 모든 브라우저에서 호환됩니다</li>
             </ul>
           </div>
