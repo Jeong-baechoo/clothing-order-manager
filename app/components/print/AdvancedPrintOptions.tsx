@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Order } from '../../models/orderTypes';
 import { isBrowser } from '../../utils/pdf-utils';
-import { generatePDFFromHTML } from '../../utils/pdf-utils-html';
+import { generateHTMLPDF } from '../../utils/pdf-utils-html';
 
 interface AdvancedPrintOptionsProps {
   order: Order;
@@ -31,7 +31,7 @@ export default function AdvancedPrintOptions({ order, children }: AdvancedPrintO
       console.log('HTML 기반 PDF 생성 시작');
       
       // HTML 기반 PDF 생성
-      await generatePDFFromHTML(order);
+      await generateHTMLPDF(order, false);
       
       console.log('PDF 생성 성공');
       alert('PDF가 성공적으로 생성되었습니다!');

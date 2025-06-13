@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { Order } from '../../models/orderTypes';
-import { getPreviewHTML } from '../../utils/pdf-utils-html';
+import { generateInvoiceHTML } from '../../utils/pdf-utils-html';
 
 interface InvoicePreviewProps {
   order: Order;
@@ -14,7 +14,7 @@ export default function InvoicePreview({ order }: InvoicePreviewProps) {
 
   useEffect(() => {
     if (iframeRef.current) {
-      const previewHTML = getPreviewHTML(order);
+      const previewHTML = generateInvoiceHTML(order);
       const blob = new Blob([previewHTML], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       
