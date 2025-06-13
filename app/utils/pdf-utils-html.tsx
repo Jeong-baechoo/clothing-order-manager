@@ -471,7 +471,7 @@ export const generateHTMLPDF = async (order: Order, preview: boolean = false): P
     document.body.appendChild(container);
 
     // Get the A4 container element
-    const element = container.querySelector('.a4-container');
+    const element = container.querySelector('.a4-container') as HTMLElement;
 
     if (!element) {
       throw new Error('Invoice element not found');
@@ -481,7 +481,7 @@ export const generateHTMLPDF = async (order: Order, preview: boolean = false): P
     const options = {
       margin: 0,
       filename: `${order.customerName}_주문서.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
+      image: { type: 'jpeg' as const, quality: 0.98 },
       html2canvas: {
         scale: 2,
         useCORS: true,
@@ -496,9 +496,9 @@ export const generateHTMLPDF = async (order: Order, preview: boolean = false): P
         backgroundColor: '#ffffff'
       },
       jsPDF: {
-        unit: 'pt',
+        unit: 'pt' as const,
         format: [595, 842], // A4 size in points
-        orientation: 'portrait',
+        orientation: 'portrait' as const,
         compress: true
       },
       pagebreak: { mode: 'avoid-all', before: '.page-break' }
@@ -511,7 +511,7 @@ export const generateHTMLPDF = async (order: Order, preview: boolean = false): P
 
     if (preview) {
       // Generate blob and open in new tab for preview
-      const blob = await pdfWorker.outputPdf('blob');
+      const blob = await pdfWorker.output('blob') as Blob;
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
 
