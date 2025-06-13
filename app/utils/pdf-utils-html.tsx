@@ -177,7 +177,6 @@ export const generateInvoiceHTML = (order: Order): string => {
           font-size: 14px;
           font-weight: bold;
           margin-bottom: 8px;
-          letter-spacing: 1px;
           color: #000000;
         }
 
@@ -251,14 +250,14 @@ export const generateInvoiceHTML = (order: Order): string => {
           display: flex;
           min-height: 20px;
           align-items: center;
-          padding: 2px 0;
+          padding: 5px 0;
           color: #000000;
         }
 
         .col-product {
           width: 25%;
           padding: 0 4px;
-          text-align: center;
+          text-align: left;
         }
 
         .col-size {
@@ -361,7 +360,7 @@ export const generateInvoiceHTML = (order: Order): string => {
             <div class="company-info">
               <p>커스텀 팀 웨어 제작업체</p>
               <p>사업자 등록번호 279-32-01590</p>
-              <p>278-079307-01-011기업은행 CAELUM(정의영)</p>
+              <p>157-211939-04-011 기업은행 정의영(케룸)</p>
             </div>
           </header>
 
@@ -369,7 +368,7 @@ export const generateInvoiceHTML = (order: Order): string => {
           <main>
             <!-- Customer Info Section -->
             <section class="customer-section">
-              <h2>IN VOICE</h2>
+              <h2>INVOICE</h2>
               <div class="customer-info">
                 <div class="customer-info-row">
                   <span class="customer-info-label">NAME</span>
@@ -389,7 +388,7 @@ export const generateInvoiceHTML = (order: Order): string => {
             <!-- Mid-Total Summary Bar -->
             <section class="total-summary-bar">
               <span class="label">TOTAL</span>
-              <span class="value">${grandTotal.toLocaleString()}</span>
+              <span class="value">${totalWithVat.toLocaleString()}</span>
             </section>
 
             <!-- Items Table -->

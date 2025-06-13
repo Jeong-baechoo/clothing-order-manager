@@ -1,0 +1,17 @@
+{
+  "name": "migration-scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "migrate-order-ids": "tsx migrate-order-ids.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.9",
+    "dotenv": "^16.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
