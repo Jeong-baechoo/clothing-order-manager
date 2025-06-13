@@ -147,7 +147,6 @@ export const generateInvoiceHTML = (order: Order): string => {
         header .logo {
           height: 50px;
           width: auto;
-          filter: brightness(0) invert(1);
           /*left: 50%;*/
         }
 
@@ -358,7 +357,7 @@ export const generateInvoiceHTML = (order: Order): string => {
         <div id="invoice-page">
           <!-- Header Section -->
           <header>
-            <img src="/images/caelum-logo.png" alt="CAELUM" class="logo" />
+            <img src="/images/caelum-logo-white.png" alt="CAELUM" class="logo" />
             <div class="company-info">
               <p>커스텀 팀 웨어 제작업체</p>
               <p>사업자 등록번호 279-32-01590</p>
