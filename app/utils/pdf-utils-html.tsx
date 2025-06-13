@@ -259,7 +259,7 @@ export const generateInvoiceHTML = (order: Order): string => {
         .col-product {
           width: 25%;
           padding: 0 4px;
-          text-align: left;
+          text-align: center;
         }
 
         .col-size {
@@ -480,7 +480,7 @@ export const generateHTMLPDF = async (order: Order, preview: boolean = false): P
     // PDF options - 정확한 A4 크기 설정
     const options = {
       margin: 0,
-      filename: `Invoice_${order.id}.pdf`,
+      filename: `${order.customerName}_주문서.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: {
         scale: 2,
