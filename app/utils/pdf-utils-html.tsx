@@ -9,9 +9,24 @@ export const generateInvoiceHTML = (order: Order): string => {
   const totalWithVat = grandTotal + vat;
   const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
+  // 상품 개수에 따른 동적 간격 계산
+  const itemCount = order.items.length;
+  let rowPadding = '8px'; // 기본값
+  let fontSize = '13px'; // 기본값
+
+  if (itemCount > 20) {
+    rowPadding = '2px';
+    fontSize = '11px';
+  } else if (itemCount > 15) {
+    rowPadding = '3px';
+    fontSize = '12px';
+  } else if (itemCount > 10) {
+    rowPadding = '5px';
+    fontSize = '12px';
+  }
+
   // Generate table rows
   let tableRows = '';
-  let totalRows = 0;
 
   // Add main order items
   order.items.forEach(item => {
@@ -25,20 +40,11 @@ export const generateInvoiceHTML = (order: Order): string => {
         <div class="col-remarks"></div>
       </div>
     `;
-    totalRows++;
   });
 
   // Note: 프린팅과 디자인 비용은 이미 단가에 포함되어 있으므로 별도 행으로 표시하지 않음
 
-  // Add empty rows to maintain consistent look
-  const emptyRowsToAdd = Math.max(0, 5 - totalRows);
-  for (let i = 0; i < emptyRowsToAdd; i++) {
-    tableRows += `
-      <div class="table-row">
-        <div style="width: 100%">&nbsp;</div>
-      </div>
-    `;
-  }
+  // 빈 행 추가 제거 - 반응형으로 자동 조절되도록 함
 
   return `
     <!DOCTYPE html>
@@ -66,25 +72,28 @@ export const generateInvoiceHTML = (order: Order): string => {
         /* A4 Container */
         .a4-container {
           width: 210mm;
-          height: 297mm;
+          min-height: 297mm;
           margin: 0;
           padding: 15mm 10mm;
           background-color: #f9f9f9;
           position: relative;
-          overflow: hidden;
+          overflow: visible;
           box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
         }
 
         /* Invoice container with padding inside A4 */
         #invoice-page {
           width: 100%;
-          height: 100%;
+          min-height: 100%;
           padding: 30mm 15mm;
           display: flex;
           flex-direction: column;
           background-color: #f9f9f9;
           box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.05);
           box-sizing: border-box;
+          flex: 1;
         }
 
         /* Header */
@@ -137,10 +146,11 @@ export const generateInvoiceHTML = (order: Order): string => {
 
         /* Main content */
         main {
-          flex: 1;
+          flex: 1 1 auto;
           display: flex;
           flex-direction: column;
-          overflow: hidden;
+          overflow: visible;
+          min-height: 0;
         }
 
         /* Customer info section */
@@ -180,106 +190,96 @@ export const generateInvoiceHTML = (order: Order): string => {
           color: #000000;
         }
 
-        /* Total summary bar */
-        .total-summary-bar {
-          visibility: hidden;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          border-top: 2.5px solid black;
-          padding: 5mm 5mm;
-          margin: 5mm 0;
-        }
-
-        .total-summary-bar .label {
-          font-size: 16px;
-          font-weight: bold;
-          letter-spacing: 1px;
-          color: #000000;
-        }
-
-        .total-summary-bar .value {
-          font-size: 18px;
-          font-weight: bold;
-          color: #000000;
-        }
 
         /* Items table */
         .items-table {
-          flex: 1;
-          overflow: hidden;
+          flex: 1 1 auto;
+          overflow: visible;
+          display: flex;
+          flex-direction: column;
+          min-height: 100px;
         }
 
         .table-header {
           display: flex;
-          font-size: 14px;
+          font-size: ${itemCount > 20 ? '12px' : itemCount > 15 ? '13px' : '14px'};
           font-weight: bold;
           text-align: center;
-          padding: 5px 0;
+          padding: ${itemCount > 20 ? '3px 0' : '5px 0'};
           /* border-bottom: 1px solid #000; */
           color: #000000;
         }
 
         .table-body {
-          font-size: 13px;
+          font-size: ${fontSize};
           text-align: center;
           color: #000000;
+          flex: 1 1 auto;
+          display: flex;
+          flex-direction: column;
+          min-height: 50px;
         }
 
         .table-row {
           display: flex;
-          min-height: 20px;
+          min-height: ${itemCount > 20 ? '20px' : itemCount > 15 ? '22px' : '25px'};
           align-items: center;
-          padding: 5px 0;
+          padding: ${rowPadding} 0;
           color: #000000;
+          flex-shrink: 0;
+        }
+        
+        .table-row:last-child {
+          border-bottom: none;
         }
 
         .col-product {
           width: 25%;
-          padding: 0 4px;
+          padding: 0 ${itemCount > 20 ? '2' : '4'}px;
           text-align: left;
         }
 
         .col-size {
           width: 20%;
-          padding: 0 4px;
+          padding: 0 ${itemCount > 20 ? '2' : '4'}px;
         }
 
         .col-quantity {
           width: 10%;
-          padding: 0 4px;
+          padding: 0 ${itemCount > 20 ? '2' : '4'}px;
         }
 
         .col-price {
           width: 15%;
-          padding: 0 4px;
+          padding: 0 ${itemCount > 20 ? '2' : '4'}px;
         }
 
         .col-amount {
           width: 15%;
-          padding: 0 4px;
+          padding: 0 ${itemCount > 20 ? '2' : '4'}px;
         }
 
         .col-remarks {
           width: 15%;
-          padding: 0 4px;
+          padding: 0 ${itemCount > 20 ? '2' : '4'}px;
         }
 
         /* Footer */
         footer {
-          margin-top: auto;
+          margin-top: 20px;
           padding-top: 5mm;
+          flex-shrink: 0;
         }
 
         /* Final summary */
         .final-summary {
           border-top: 2.5px solid black;
           border-bottom: 2.5px solid black;
-          padding: 12px 0;
+          padding: ${itemCount > 20 ? '8px 0' : '12px 0'};
           display: flex;
           justify-content: space-between;
           align-items: stretch;
-          min-height: 80px;
+          min-height: ${itemCount > 20 ? '60px' : '80px'};
         }
 
         .notes-ea-container {
@@ -371,11 +371,6 @@ export const generateInvoiceHTML = (order: Order): string => {
               </div>
             </section>
 
-            <!-- Mid-Total Summary Bar -->
-            <section class="total-summary-bar">
-              <span class="label">TOTAL</span>
-              <span class="value">${totalWithVat.toLocaleString()}</span>
-            </section>
 
             <!-- Items Table -->
             <section class="items-table">
