@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Order, OrderItem } from '../../models/orderTypes';
 import ProductSelectionModal from './ProductSelectionModal';
+import { calculateUnitPrice, calculateItemTotal, calculateTotalPrice } from '../../utils/order-calculations';
 
 interface OrderFormProps {
     onSubmit: (order: Partial<Order>) => void;
@@ -137,45 +138,8 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         }));
     }, [orderData.items]);
 
-    // 개별 항목의 단가 계산 (기본가 + 프린팅 + 디자인)
-    const calculateUnitPrice = useCallback((item: OrderItem): number => {
-        const basePrice = Math.max(0, Number(item.price) || 0);
-        
-        // 프린팅 비용 계산 (개당 비용)
-        let printingCostPerItem = 0;
-        printingCostPerItem += Math.max(0, Number(item.smallPrintingQuantity) || 0) * 1500;
-        printingCostPerItem += Math.max(0, Number(item.largePrintingQuantity) || 0) * 3000;
-
-        // 특대형 프린팅 (개당 비용)
-        const extraLargeQty = Math.max(0, Number(item.extraLargePrintingQuantity) || 0);
-        const extraLargePrice = Math.max(0, Number(item.extraLargePrintingPrice) || 0);
-        if (extraLargeQty > 0 && extraLargePrice > 0) {
-            printingCostPerItem += extraLargeQty * extraLargePrice;
-        }
-
-        // 디자인 작업 (개당 비용)
-        const designQty = Math.max(0, Number(item.designWorkQuantity) || 0);
-        const designPrice = Math.max(0, Number(item.designWorkPrice) || 0);
-        if (designQty > 0 && designPrice > 0) {
-            printingCostPerItem += designQty * designPrice;
-        }
-
-        return basePrice + printingCostPerItem;
-    }, []);
-
-    // 개별 상품 총액 계산
-    const calculateItemTotal = useCallback((item: OrderItem): number => {
-        const quantity = Math.max(0, Number(item.quantity) || 0);
-        const unitPrice = calculateUnitPrice(item);
-        return unitPrice * quantity;
-    }, [calculateUnitPrice]);
-
     // 총 주문 금액 계산
-    const calculateTotalPrice = useCallback((): number => {
-        return (orderData.items || []).reduce((sum, item) => sum + calculateItemTotal(item), 0);
-    }, [orderData.items, calculateItemTotal]);
-
-    const totalPrice = useMemo(() => calculateTotalPrice(), [calculateTotalPrice]);
+    const totalPrice = useMemo(() => calculateTotalPrice(orderData.items || []), [orderData.items]);
 
     // 폼 유효성 검사
     const validateForm = (): { isValid: boolean; errors: string[] } => {
@@ -267,9 +231,12 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         }
 
         // 총액 검증
-        const total = calculateTotalPrice();
+        const total = calculateTotalPrice(orderData.items || []);
         if (total > 999999999) {  // 10억 미만으로 제한
             errors.push('총 주문 금액이 너무 큽니다.');
+        }
+        if (total <= 0) {
+            errors.push('총 주문 금액은 0원보다 커야 합니다.');
         }
 
         return { isValid: errors.length === 0, errors };
@@ -473,7 +440,10 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                                 <input
                                                                     type="text"
                                                                     value={item.product || ''}
-                                                                    onChange={(e) => handleItemChange(index, 'product', e.target.value)}
+                                                                    onChange={(e) => {
+                                                                        const value = e.target.value.slice(0, 100); // 100자 제한
+                                                                        handleItemChange(index, 'product', value);
+                                                                    }}
                                                                     placeholder="상품명"
                                                                     className="w-full px-1 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-xs focus:ring-1 focus:ring-blue-500 mb-1"
                                                                 />
@@ -541,7 +511,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                             <input
                                                                 type="number"
                                                                 value={item.smallPrintingQuantity || ''}
-                                                                onChange={(e) => handleItemChange(index, 'smallPrintingQuantity', parseInt(e.target.value) || 0)}
+                                                                onChange={(e) => handleSafeNumberChange(index, 'smallPrintingQuantity', e.target.value, 0, 9999, true)}
                                                                 min="0"
                                                                 placeholder="개수"
                                                                 className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
@@ -552,7 +522,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                             <input
                                                                 type="number"
                                                                 value={item.largePrintingQuantity || ''}
-                                                                onChange={(e) => handleItemChange(index, 'largePrintingQuantity', parseInt(e.target.value) || 0)}
+                                                                onChange={(e) => handleSafeNumberChange(index, 'largePrintingQuantity', e.target.value, 0, 9999, true)}
                                                                 min="0"
                                                                 placeholder="개수"
                                                                 className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
@@ -564,7 +534,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                                 <input
                                                                     type="number"
                                                                     value={item.extraLargePrintingQuantity || ''}
-                                                                    onChange={(e) => handleItemChange(index, 'extraLargePrintingQuantity', parseInt(e.target.value) || 0)}
+                                                                    onChange={(e) => handleSafeNumberChange(index, 'extraLargePrintingQuantity', e.target.value, 0, 9999, true)}
                                                                     min="0"
                                                                     placeholder="개수"
                                                                     className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
@@ -572,7 +542,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                                 <input
                                                                     type="number"
                                                                     value={item.extraLargePrintingPrice || ''}
-                                                                    onChange={(e) => handleItemChange(index, 'extraLargePrintingPrice', parseFloat(e.target.value) || 0)}
+                                                                    onChange={(e) => handleSafeNumberChange(index, 'extraLargePrintingPrice', e.target.value, 0, 10000000, false)}
                                                                     min="0"
                                                                     placeholder="단가"
                                                                     className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
@@ -584,7 +554,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                                 <input
                                                                     type="number"
                                                                     value={item.designWorkQuantity || ''}
-                                                                    onChange={(e) => handleItemChange(index, 'designWorkQuantity', parseInt(e.target.value) || 0)}
+                                                                    onChange={(e) => handleSafeNumberChange(index, 'designWorkQuantity', e.target.value, 0, 9999, true)}
                                                                     min="0"
                                                                     placeholder="개수"
                                                                     className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
@@ -592,7 +562,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                                 <input
                                                                     type="number"
                                                                     value={item.designWorkPrice || ''}
-                                                                    onChange={(e) => handleItemChange(index, 'designWorkPrice', parseFloat(e.target.value) || 0)}
+                                                                    onChange={(e) => handleSafeNumberChange(index, 'designWorkPrice', e.target.value, 0, 10000000, false)}
                                                                     min="0"
                                                                     placeholder="단가"
                                                                     className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"

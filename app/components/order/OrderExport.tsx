@@ -1,37 +1,13 @@
 'use client';
 
 import { Order } from '../../models/orderTypes';
+import { calculateUnitPrice } from '../../utils/order-calculations';
 
 interface OrderExportProps {
     orders: Order[];
 }
 
 export default function OrderExport({ orders }: OrderExportProps) {
-    // 개별 항목의 단가 계산 (기본가 + 프린팅 + 디자인)
-    const calculateUnitPrice = (item: typeof orders[0]['items'][0]) => {
-        const basePrice = Number(item.price) || 0;
-        
-        // 프린팅 비용 계산 (개당 비용)
-        let printingCostPerItem = 0;
-        printingCostPerItem += Math.max(0, Number(item.smallPrintingQuantity) || 0) * 1500;
-        printingCostPerItem += Math.max(0, Number(item.largePrintingQuantity) || 0) * 3000;
-
-        // 특대형 프린팅 (개당 비용)
-        const extraLargeQty = Math.max(0, Number(item.extraLargePrintingQuantity) || 0);
-        const extraLargePrice = Math.max(0, Number(item.extraLargePrintingPrice) || 0);
-        if (extraLargeQty > 0 && extraLargePrice > 0) {
-            printingCostPerItem += extraLargeQty * extraLargePrice;
-        }
-
-        // 디자인 작업 (개당 비용)
-        const designQty = Math.max(0, Number(item.designWorkQuantity) || 0);
-        const designPrice = Math.max(0, Number(item.designWorkPrice) || 0);
-        if (designQty > 0 && designPrice > 0) {
-            printingCostPerItem += designQty * designPrice;
-        }
-
-        return basePrice + printingCostPerItem;
-    };
 
     // CSV 형식으로 주문 데이터 내보내기
     const exportToCSV = () => {

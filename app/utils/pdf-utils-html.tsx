@@ -1,22 +1,25 @@
 import { Order } from '../models/orderTypes';
+import { calculateUnitPrice, calculateItemTotal } from './order-calculations';
 
 // Generate HTML invoice based on the invoice.html template
 export const generateInvoiceHTML = (order: Order): string => {
-  // Calculate totals
+  // Calculate totals using the shared calculation logic
+  const grandTotal = order.items.reduce((sum, item) => sum + calculateItemTotal(item), 0);
+  const vat = Math.round(grandTotal * 0.1);
+  const totalWithVat = grandTotal + vat;
+  const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
+  
+  // For display purposes, calculate subtotals
   const subtotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const printingTotal = order.items.reduce((sum, item) => {
-    const smallPrinting = (item.smallPrintingQuantity || 0) * 3000;
-    const largePrinting = (item.largePrintingQuantity || 0) * 5000;
+    const smallPrinting = (item.smallPrintingQuantity || 0) * 1500;
+    const largePrinting = (item.largePrintingQuantity || 0) * 3000;
     const extraLargePrinting = (item.extraLargePrintingQuantity || 0) * (item.extraLargePrintingPrice || 0);
     return sum + smallPrinting + largePrinting + extraLargePrinting;
   }, 0);
   const designTotal = order.items.reduce((sum, item) => {
     return sum + ((item.designWorkQuantity || 0) * (item.designWorkPrice || 0));
   }, 0);
-  const grandTotal = subtotal + printingTotal + designTotal;
-  const vat = Math.round(grandTotal * 0.1);
-  const totalWithVat = grandTotal + vat;
-  const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
   // Generate table rows
   let tableRows = '';
@@ -24,53 +27,20 @@ export const generateInvoiceHTML = (order: Order): string => {
 
   // Add main order items
   order.items.forEach(item => {
-    let remarks = '';
-    if (item.smallPrintingQuantity) remarks += `소형: ${item.smallPrintingQuantity} `;
-    if (item.largePrintingQuantity) remarks += `대형: ${item.largePrintingQuantity} `;
-    if (item.extraLargePrintingQuantity) remarks += `특대: ${item.extraLargePrintingQuantity} `;
-    if (item.designWorkQuantity) remarks += `디자인: ${item.designWorkQuantity}`;
-
     tableRows += `
       <div class="table-row">
         <div class="col-product">${item.product}</div>
         <div class="col-size">${item.size} / ${item.color}</div>
         <div class="col-quantity">${item.quantity}</div>
-        <div class="col-price">${item.price.toLocaleString()}</div>
-        <div class="col-amount">${(item.price * item.quantity).toLocaleString()}</div>
-        <div class="col-remarks">${remarks.trim()}</div>
+        <div class="col-price">${calculateUnitPrice(item).toLocaleString()}</div>
+        <div class="col-amount">${calculateItemTotal(item).toLocaleString()}</div>
+        <div class="col-remarks"></div>
       </div>
     `;
     totalRows++;
   });
 
-  // Add additional cost rows if they exist
-  if (printingTotal > 0) {
-    tableRows += `
-      <div class="table-row">
-        <div class="col-product">프린팅 비용</div>
-        <div class="col-size">-</div>
-        <div class="col-quantity">-</div>
-        <div class="col-price">-</div>
-        <div class="col-amount">${printingTotal.toLocaleString()}</div>
-        <div class="col-remarks">프린팅 작업</div>
-      </div>
-    `;
-    totalRows++;
-  }
-
-  if (designTotal > 0) {
-    tableRows += `
-      <div class="table-row">
-        <div class="col-product">디자인 비용</div>
-        <div class="col-size">-</div>
-        <div class="col-quantity">-</div>
-        <div class="col-price">-</div>
-        <div class="col-amount">${designTotal.toLocaleString()}</div>
-        <div class="col-remarks">디자인 작업</div>
-      </div>
-    `;
-    totalRows++;
-  }
+  // Note: 프린팅과 디자인 비용은 이미 단가에 포함되어 있으므로 별도 행으로 표시하지 않음
 
   // Add empty rows to maintain consistent look
   const emptyRowsToAdd = Math.max(0, 5 - totalRows);
