@@ -8,18 +8,6 @@ export const generateInvoiceHTML = (order: Order): string => {
   const vat = Math.round(grandTotal * 0.1);
   const totalWithVat = grandTotal + vat;
   const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
-  
-  // For display purposes, calculate subtotals
-  const subtotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const printingTotal = order.items.reduce((sum, item) => {
-    const smallPrinting = (item.smallPrintingQuantity || 0) * 1500;
-    const largePrinting = (item.largePrintingQuantity || 0) * 3000;
-    const extraLargePrinting = (item.extraLargePrintingQuantity || 0) * (item.extraLargePrintingPrice || 0);
-    return sum + smallPrinting + largePrinting + extraLargePrinting;
-  }, 0);
-  const designTotal = order.items.reduce((sum, item) => {
-    return sum + ((item.designWorkQuantity || 0) * (item.designWorkPrice || 0));
-  }, 0);
 
   // Generate table rows
   let tableRows = '';
