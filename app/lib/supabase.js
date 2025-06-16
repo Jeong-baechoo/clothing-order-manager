@@ -36,14 +36,50 @@ export async function getOrders() {
           wholesale_price
         )
       )
-    `);
+    `)
+    .order('order_date', { ascending: false });
 
   if (error) {
     console.error('주문 데이터 불러오기 오류:', error);
     return [];
   }
 
-  return data || [];
+  // 각 주문의 items를 정렬
+  const ordersWithSortedItems = (data || []).map(order => ({
+    ...order,
+    items: sortOrderItems(order.items || [])
+  }));
+
+  return ordersWithSortedItems;
+}
+
+// 주문 항목 정렬 함수
+function sortOrderItems(items) {
+  return [...items].sort((a, b) => {
+    // 1. 상품명 비교 - 자연 정렬 (숫자가 포함된 경우 올바르게 정렬)
+    const productNameA = a.product?.name || a.product_name || '';
+    const productNameB = b.product?.name || b.product_name || '';
+    const productCompare = productNameA.localeCompare(productNameB, 'ko', { numeric: true });
+    if (productCompare !== 0) return productCompare;
+    
+    // 2. 색상 비교
+    const colorCompare = (a.color || '').localeCompare(b.color || '', 'ko');
+    if (colorCompare !== 0) return colorCompare;
+    
+    // 3. 사이즈 비교 - 사이즈 순서 정의
+    const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
+    const sizeIndexA = sizeOrder.indexOf(a.size || '');
+    const sizeIndexB = sizeOrder.indexOf(b.size || '');
+    
+    // 정의된 사이즈가 아닌 경우 문자열 비교
+    if (sizeIndexA === -1 && sizeIndexB === -1) {
+      return (a.size || '').localeCompare(b.size || '', 'ko', { numeric: true });
+    }
+    if (sizeIndexA === -1) return 1;
+    if (sizeIndexB === -1) return -1;
+    
+    return sizeIndexA - sizeIndexB;
+  });
 }
 
 export async function addOrder(order) {
