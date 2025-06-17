@@ -48,6 +48,7 @@ const OrdersPage: React.FC = () => {
     const [isEditMode, setIsEditMode] = useState(false);
     const [currentOrder, setCurrentOrder] = useState<Partial<Order> | null>(null);
     const [loading, setLoading] = useState(true);
+    const [showCompleted, setShowCompleted] = useState(false);
 
     // 삭제 확인 대화상자 상태
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -58,7 +59,7 @@ const OrdersPage: React.FC = () => {
         async function loadOrders() {
             setLoading(true);
             try {
-                const ordersData = await getOrders();
+                const ordersData = await getOrders(showCompleted);
                 if (ordersData.length > 0) {
                     // Supabase에서 받은 데이터를 애플리케이션 형식으로 변환
                     const formattedOrders = ordersData.map(order => ({
@@ -104,7 +105,7 @@ const OrdersPage: React.FC = () => {
         }
 
         loadOrders();
-    }, []);
+    }, [showCompleted]);
 
     // 주문 검색 및 필터링
     const filteredOrders = orders.filter((order) => {
@@ -359,10 +360,22 @@ const OrdersPage: React.FC = () => {
                             <option value="all">모든 상태</option>
                             <option value="pending">대기중</option>
                             <option value="processing">작업중</option>
-                            <option value="completed">완료</option>
+                            {showCompleted && <option value="completed">완료</option>}
                         </select>
                     </div>
-                    <div className="w-full md:w-auto flex items-end">
+                    <div className="w-full md:w-auto flex items-end gap-4">
+                        <div className="flex items-center">
+                            <input
+                                type="checkbox"
+                                id="showCompleted"
+                                checked={showCompleted}
+                                onChange={(e) => setShowCompleted(e.target.checked)}
+                                className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                            />
+                            <label htmlFor="showCompleted" className="text-sm text-gray-700 dark:text-gray-300">
+                                완료된 주문 표시
+                            </label>
+                        </div>
                         <OrderExport orders={filteredOrders} />
                     </div>
                 </div>

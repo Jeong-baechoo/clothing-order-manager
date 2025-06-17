@@ -22,8 +22,8 @@ export const supabase = createClient(supabaseUrl || '', supabaseKey || '', {
 });
 
 // 주문 관련 함수들
-export async function getOrders() {
-  const { data, error } = await supabase
+export async function getOrders(includeCompleted = false) {
+  let query = supabase
     .from('orders')
     .select(`
       *,
@@ -36,8 +36,14 @@ export async function getOrders() {
           wholesale_price
         )
       )
-    `)
-    .order('order_date', { ascending: false });
+    `);
+
+  // includeCompleted가 false인 경우 완료된 주문 제외
+  if (!includeCompleted) {
+    query = query.neq('status', 'completed');
+  }
+
+  const { data, error } = await query.order('order_date', { ascending: false });
 
   if (error) {
     console.error('주문 데이터 불러오기 오류:', error);
