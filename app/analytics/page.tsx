@@ -68,6 +68,7 @@ const CustomTooltip = ({ active, payload, label }: {
 export default function AnalyticsPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedMonth, setSelectedMonth] = useState<string>('all');
     const [analytics, setAnalytics] = useState<AnalyticsData>({
         totalRevenue: 0,
         totalCost: 0,
@@ -83,10 +84,10 @@ export default function AnalyticsPage() {
     const loadData = useCallback(async () => {
         try {
             setLoading(true);
-            
-            // 주문 데이터 로드 (제품 정보는 조인으로 함께 가져옴)
-            const orderData = await getOrders();
-            
+
+            // 주문 데이터 로드 (완료된 주문 포함, 제품 정보는 조인으로 함께 가져옴)
+            const orderData = await getOrders(true);
+
             // 개선된 스키마에 맞게 주문 데이터 변환 (안전한 변환)
             const transformedOrders = orderData.map(order => ({
                 id: order.id || '',
@@ -139,7 +140,7 @@ export default function AnalyticsPage() {
                     };
                 }) : []
             }));
-            
+
             setOrders(transformedOrders);
         } catch (error) {
             console.error('데이터 로드 실패:', error);
@@ -153,22 +154,22 @@ export default function AnalyticsPage() {
     const calculateItemCost = useCallback((item: OrderItem): number => {
         // 정규화된 제품 정보 사용 (더 정확하고 빠름)
         const productInfo = item.productInfo;
-        const wholesalePrice = (productInfo?.wholesale_price && productInfo.wholesale_price > 0) 
-            ? productInfo.wholesale_price 
+        const wholesalePrice = (productInfo?.wholesale_price && productInfo.wholesale_price > 0)
+            ? productInfo.wholesale_price
             : (item.price * 0.6); // 도매가가 0이거나 없으면 60% 적용
-        
-        
+
+
         // 기본 제품 비용 (도매가 기준)
         const baseCost = wholesalePrice * item.quantity;
-        
+
         // 인쇄 비용 (고정 비용으로 가정)
         const printingCost = (item.smallPrintingQuantity || 0) * 2000 +
                            (item.largePrintingQuantity || 0) * 3000 +
                            (item.extraLargePrintingQuantity || 0) * 4000;
-        
+
         // 디자인 작업 비용
         const designCost = (item.designWorkPrice || 0) * 0.3; // 디자인 비용의 30%가 실제 비용
-        
+
         return baseCost + printingCost + designCost;
     }, []);
 
@@ -178,16 +179,20 @@ export default function AnalyticsPage() {
         const productMap = new Map<string, { quantity: number; revenue: number }>();
         const monthlyMap = new Map<string, { revenue: number; cost: number }>();
 
-        orders.forEach(order => {
+        // 모든 주문을 매출 분석에 포함, 선택된 월 필터 적용
+        orders.filter(order => {
+            if (selectedMonth === 'all') return true;
+            return order.orderDate.startsWith(selectedMonth);
+        }).forEach(order => {
             const orderRevenue = order.totalPrice;
             let orderCost = 0;
 
             order.items.forEach(item => {
                 const itemCost = calculateItemCost(item);
                 const itemRevenue = item.price * item.quantity;
-                
+
                 orderCost += itemCost;
-                
+
                 // 제품별 집계 (정규화된 제품 정보 사용)
                 const productKey = item.productInfo?.name || item.product;
                 const existing = productMap.get(productKey) || { quantity: 0, revenue: 0 };
@@ -228,17 +233,23 @@ export default function AnalyticsPage() {
             }))
             .sort((a, b) => a.month.localeCompare(b.month));
 
+        // 전체 주문 수 계산 (선택된 월 필터 적용)
+        const filteredOrders = orders.filter(order => {
+            if (selectedMonth === 'all') return true;
+            return order.orderDate.startsWith(selectedMonth);
+        }).length;
+
         setAnalytics({
             totalRevenue,
             totalCost,
             netProfit,
             profitMargin,
-            totalOrders: orders.length,
-            averageOrderValue: orders.length > 0 ? totalRevenue / orders.length : 0,
+            totalOrders: filteredOrders,
+            averageOrderValue: filteredOrders > 0 ? totalRevenue / filteredOrders : 0,
             topProducts,
             monthlyData
         });
-    }, [orders, calculateItemCost]);
+    }, [orders, calculateItemCost, selectedMonth]);
 
     useEffect(() => {
         loadData();
@@ -265,7 +276,30 @@ export default function AnalyticsPage() {
     return (
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
             <div className="px-4 py-6 sm:px-0">
-                <h1 className="text-3xl font-bold text-gray-900 mb-8">매출 분석 대시보드</h1>
+                <div className="flex justify-between items-center mb-8">
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">매출 분석 대시보드</h1>
+                    <div className="flex items-center space-x-2">
+                        <label htmlFor="month-select" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            분석 기간:
+                        </label>
+                        <select
+                            id="month-select"
+                            value={selectedMonth}
+                            onChange={(e) => setSelectedMonth(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        >
+                            <option value="all">전체 기간</option>
+                            {orders.length > 0 && Array.from(new Set(orders.map(o => o.orderDate.slice(0, 7))))
+                                .sort((a, b) => b.localeCompare(a))
+                                .map(month => (
+                                    <option key={month} value={month}>
+                                        {new Date(month + '-01').toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}
+                                    </option>
+                                ))
+                            }
+                        </select>
+                    </div>
+                </div>
 
                 {/* 주요 지표 카드 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -431,7 +465,7 @@ export default function AnalyticsPage() {
                                 {analytics.topProducts.map((product, index) => (
                                     <div key={index} className="flex items-center justify-between">
                                         <div className="flex items-center space-x-3">
-                                            <div 
+                                            <div
                                                 className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white"
                                                 style={{ backgroundColor: COLORS[index % COLORS.length] }}
                                             >
@@ -532,13 +566,13 @@ export default function AnalyticsPage() {
                                         <CartesianGrid strokeDasharray="3 3" />
                                         <XAxis dataKey="month" />
                                         <YAxis />
-                                        <Tooltip 
+                                        <Tooltip
                                             formatter={(value) => [`${value}`, '순수익']}
                                         />
-                                        <Line 
-                                            type="monotone" 
-                                            dataKey="profit" 
-                                            stroke="#8884d8" 
+                                        <Line
+                                            type="monotone"
+                                            dataKey="profit"
+                                            stroke="#8884d8"
                                             strokeWidth={3}
                                             dot={{ fill: '#8884d8', strokeWidth: 2, r: 4 }}
                                         />
