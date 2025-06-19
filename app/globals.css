@@ -20,6 +20,39 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* 하이라이트 페이드 애니메이션 */
+@keyframes highlight-fade {
+  0% {
+    background-color: rgb(239 246 255); /* bg-blue-50 */
+    transform: scale(1);
+  }
+  50% {
+    background-color: rgb(239 246 255); /* bg-blue-50 */
+    transform: scale(1);
+  }
+  100% {
+    background-color: transparent;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  @keyframes highlight-fade {
+    0% {
+      background-color: rgba(30, 58, 138, 0.3); /* bg-blue-900/30 */
+      transform: scale(1);
+    }
+    50% {
+      background-color: rgba(30, 58, 138, 0.3); /* bg-blue-900/30 */
+      transform: scale(1);
+    }
+    100% {
+      background-color: transparent;
+      transform: scale(1);
+    }
+  }
+}
+
 /* 인쇄용 스타일 */
 @media print {
 

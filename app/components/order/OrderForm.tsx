@@ -43,6 +43,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showProductModal, setShowProductModal] = useState(false);
     const [currentItemIndex, setCurrentItemIndex] = useState<number | null>(null);
+    const [highlightedItems, setHighlightedItems] = useState<Set<string>>(new Set());
 
     // 로컬 상품 데이터 (기존 DB에 없는 필드들)
     const productSizes = ['CS', 'CM', 'CL', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
@@ -138,20 +139,40 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         }));
     }, [orderData.items]);
 
+    // 하이라이트 효과 추가 함수
+    const addHighlight = useCallback((itemId: string) => {
+        setHighlightedItems(prev => new Set(prev).add(itemId));
+        // 0.6초 후 하이라이트 제거
+        setTimeout(() => {
+            setHighlightedItems(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(itemId);
+                return newSet;
+            });
+        }, 600);
+    }, []);
+
     // 상품 항목 위로 이동 핸들러
     const handleMoveItemUp = useCallback((index: number) => {
         if (index === 0) return; // 첫 번째 항목은 위로 이동 불가
 
         setOrderData(prev => {
             const newItems = [...(prev.items || [])];
+            const movingItem = newItems[index];
             // 현재 항목과 위 항목을 교환
             [newItems[index - 1], newItems[index]] = [newItems[index], newItems[index - 1]];
+            
+            // 이동한 항목에 하이라이트 효과 추가
+            if (movingItem.id) {
+                addHighlight(movingItem.id);
+            }
+            
             return {
                 ...prev,
                 items: newItems
             };
         });
-    }, []);
+    }, [addHighlight]);
 
     // 상품 항목 아래로 이동 핸들러
     const handleMoveItemDown = useCallback((index: number) => {
@@ -160,14 +181,21 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
 
         setOrderData(prev => {
             const newItems = [...(prev.items || [])];
+            const movingItem = newItems[index];
             // 현재 항목과 아래 항목을 교환
             [newItems[index], newItems[index + 1]] = [newItems[index + 1], newItems[index]];
+            
+            // 이동한 항목에 하이라이트 효과 추가
+            if (movingItem.id) {
+                addHighlight(movingItem.id);
+            }
+            
             return {
                 ...prev,
                 items: newItems
             };
         });
-    }, [orderData.items?.length]);
+    }, [orderData.items?.length, addHighlight]);
 
     // 총 주문 금액 계산
     const totalPrice = useMemo(() => calculateTotalPrice(orderData.items || []), [orderData.items]);
@@ -462,7 +490,20 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                             </thead>
                                             <tbody>
                                                 {orderData.items.map((item, index) => (
-                                                    <tr key={item.id || index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                                    <tr 
+                                                        key={item.id || index} 
+                                                        className={`
+                                                            hover:bg-gray-50 dark:hover:bg-gray-700 
+                                                            transition-all duration-300 ease-out
+                                                            ${highlightedItems.has(item.id || '') ? 
+                                                                'bg-blue-50 dark:bg-blue-900/30 ring-1 ring-blue-300 dark:ring-blue-700' : 
+                                                                ''
+                                                            }
+                                                        `}
+                                                        style={{
+                                                            animation: highlightedItems.has(item.id || '') ? 'highlight-fade 0.6s ease-out' : 'none'
+                                                        }}
+                                                    >
                                                         <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center font-medium">
                                                             {index + 1}
                                                         </td>
