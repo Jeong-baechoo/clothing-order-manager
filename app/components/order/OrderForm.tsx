@@ -138,6 +138,37 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         }));
     }, [orderData.items]);
 
+    // 상품 항목 위로 이동 핸들러
+    const handleMoveItemUp = useCallback((index: number) => {
+        if (index === 0) return; // 첫 번째 항목은 위로 이동 불가
+
+        setOrderData(prev => {
+            const newItems = [...(prev.items || [])];
+            // 현재 항목과 위 항목을 교환
+            [newItems[index - 1], newItems[index]] = [newItems[index], newItems[index - 1]];
+            return {
+                ...prev,
+                items: newItems
+            };
+        });
+    }, []);
+
+    // 상품 항목 아래로 이동 핸들러
+    const handleMoveItemDown = useCallback((index: number) => {
+        const itemsLength = orderData.items?.length || 0;
+        if (index === itemsLength - 1) return; // 마지막 항목은 아래로 이동 불가
+
+        setOrderData(prev => {
+            const newItems = [...(prev.items || [])];
+            // 현재 항목과 아래 항목을 교환
+            [newItems[index], newItems[index + 1]] = [newItems[index + 1], newItems[index]];
+            return {
+                ...prev,
+                items: newItems
+            };
+        });
+    }, [orderData.items?.length]);
+
     // 총 주문 금액 계산
     const totalPrice = useMemo(() => calculateTotalPrice(orderData.items || []), [orderData.items]);
 
@@ -408,9 +439,9 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                             <div className="p-6">
                                 {orderData.items && orderData.items.length > 0 ? (
                                     <div className="overflow-x-auto max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg min-h-96">
-                                        <table className="w-full border-collapse border border-gray-300 dark:border-gray-600" style={{tableLayout: 'fixed', minWidth: '1510px'}}>
+                                        <table className="w-full border-collapse border border-gray-300 dark:border-gray-600" style={{tableLayout: 'fixed', minWidth: '1550px'}}>
                                             <colgroup>
-                                                <col style={{ width: '50px' }} /><col style={{ width: '200px' }} /><col style={{ width: '80px' }} /><col style={{ width: '100px' }} /><col style={{ width: '100px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '140px' }} /><col style={{ width: '140px' }} /><col style={{ width: '120px' }} /><col style={{ width: '100px' }} />
+                                                <col style={{ width: '50px' }} /><col style={{ width: '200px' }} /><col style={{ width: '80px' }} /><col style={{ width: '100px' }} /><col style={{ width: '100px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '140px' }} /><col style={{ width: '140px' }} /><col style={{ width: '120px' }} /><col style={{ width: '140px' }} />
                                             </colgroup>
                                             <thead className="sticky top-0 bg-gray-100 dark:bg-gray-700 z-10">
                                                 <tr className="bg-gray-100 dark:bg-gray-700">
@@ -577,6 +608,32 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                         </td>
                                                         <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
                                                             <div className="flex justify-center items-center space-x-1">
+                                                                {/* 위로 이동 버튼 */}
+                                                                {index > 0 && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleMoveItemUp(index)}
+                                                                        className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                                                        title="위로 이동"
+                                                                    >
+                                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                                                        </svg>
+                                                                    </button>
+                                                                )}
+                                                                {/* 아래로 이동 버튼 */}
+                                                                {index < (orderData.items?.length || 0) - 1 && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleMoveItemDown(index)}
+                                                                        className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                                                        title="아래로 이동"
+                                                                    >
+                                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                                        </svg>
+                                                                    </button>
+                                                                )}
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => handleCopyItem(index)}
