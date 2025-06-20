@@ -3,8 +3,13 @@ import { calculateUnitPrice, calculateItemTotal } from './order-calculations';
 
 // Generate HTML invoice based on the invoice.html template
 export const generateInvoiceHTML = (order: Order): string => {
+  console.log('generateInvoiceHTML - order:', order); // 디버깅용
+  console.log('generateInvoiceHTML - shippingFee:', order.shippingFee); // 디버깅용
+  
   // Calculate totals using the shared calculation logic
-  const grandTotal = order.items.reduce((sum, item) => sum + calculateItemTotal(item), 0);
+  const itemsTotal = order.items.reduce((sum, item) => sum + calculateItemTotal(item), 0);
+  const shippingFee = Number(order.shippingFee) || 0;
+  const grandTotal = itemsTotal + shippingFee;
   const vat = Math.round(grandTotal * 0.1);
   const totalWithVat = grandTotal + vat;
   const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
@@ -67,6 +72,20 @@ export const generateInvoiceHTML = (order: Order): string => {
       </div>
     `;
   });
+
+  // Add shipping fee row if exists and is greater than 0
+  if (shippingFee && shippingFee > 0) {
+    tableRows += `
+      <div class="table-row">
+        <div class="col-product">배송비</div>
+        <div class="col-size">-</div>
+        <div class="col-quantity">1</div>
+        <div class="col-price">${shippingFee.toLocaleString()}</div>
+        <div class="col-amount">${shippingFee.toLocaleString()}</div>
+        <div class="col-remarks"></div>
+      </div>
+    `;
+  }
 
   // Note: 프린팅과 디자인 비용은 이미 단가에 포함되어 있으므로 별도 행으로 표시하지 않음
 

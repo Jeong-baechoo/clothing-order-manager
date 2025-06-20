@@ -39,6 +39,9 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
             }
         ]
     });
+    
+    const [shippingFee, setShippingFee] = useState<number>(3500); // 배송비 별도 관리
+    const [autoShipping, setAutoShipping] = useState<boolean>(true); // 배송비 자동 계산 여부
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showProductModal, setShowProductModal] = useState(false);
@@ -52,13 +55,26 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
     // 초기 데이터가 있으면 폼 데이터 설정
     useEffect(() => {
         if (initialData) {
+            // 배송비 항목 찾기
+            const shippingItem = initialData.items?.find(item => item.product === '배송비');
+            const regularItems = initialData.items?.filter(item => item.product !== '배송비') || [];
+            
             setOrderData({
                 ...initialData,
-                items: initialData.items?.map((item, index) => ({
+                items: regularItems.map((item, index) => ({
                     ...item,
                     id: item.id || `item-temp-${Date.now()}-${index + 1}`
-                })) || []
+                }))
             });
+            
+            // 배송비 설정
+            if (shippingItem) {
+                setShippingFee(shippingItem.price || 0);
+                setAutoShipping(false); // 기존 데이터가 있으면 수동 모드
+            } else if (initialData.shippingFee !== undefined) {
+                setShippingFee(initialData.shippingFee);
+                setAutoShipping(false); // 기존 데이터가 있으면 수동 모드
+            }
         }
     }, [initialData]);
 
@@ -114,6 +130,8 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
             items: [...(prev.items || []), newItem]
         }));
     }, [orderData.items?.length]);
+    
+    // 배송비 추가 핸들러 제거 (더 이상 필요 없음)
 
     // 상품 항목 제거 핸들러
     const handleRemoveItem = useCallback((index: number) => {
@@ -197,8 +215,22 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         });
     }, [orderData.items?.length, addHighlight]);
 
-    // 총 주문 금액 계산
-    const totalPrice = useMemo(() => calculateTotalPrice(orderData.items || []), [orderData.items]);
+    // 상품 금액 계산 (배송비 제외)
+    const totalPrice = useMemo(() => {
+        const items = orderData.items?.filter(item => item.product !== '배송비') || [];
+        return calculateTotalPrice(items);
+    }, [orderData.items]);
+    
+    // 배송비 자동 계산 (상품 금액이 100,000원 미만일 때)
+    useEffect(() => {
+        if (autoShipping) {
+            if (totalPrice < 100000 && totalPrice > 0) {
+                setShippingFee(3500);
+            } else {
+                setShippingFee(0);
+            }
+        }
+    }, [totalPrice, autoShipping]);
 
     // 폼 유효성 검사
     const validateForm = (): { isValid: boolean; errors: string[] } => {
@@ -232,6 +264,8 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         } else {
             orderData.items.forEach((item, index) => {
                 const itemNum = index + 1;
+                
+                // 배송비는 더 이상 주문 항목으로 처리하지 않음
 
                 // 필수 필드 검증
                 if (!item.product?.trim()) {
@@ -364,9 +398,14 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
 
         setIsSubmitting(true);
         try {
+            // 배송비가 포함된 항목 제거하고 순수 상품만 전달
+            const pureItems = orderData.items?.filter(item => item.product !== '배송비') || [];
+            
             await onSubmit({
                 ...orderData,
-                totalPrice
+                items: pureItems,
+                shippingFee: shippingFee,
+                totalPrice: totalPrice + shippingFee
             });
         } catch (error) {
             console.error('주문 제출 중 오류:', error);
@@ -579,68 +618,68 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                                 className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
                                                             />
                                                         </td>
-                                                        <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                                                            <input
-                                                                type="number"
-                                                                value={item.smallPrintingQuantity || ''}
-                                                                onChange={(e) => handleSafeNumberChange(index, 'smallPrintingQuantity', e.target.value, 0, 9999, true)}
-                                                                min="0"
-                                                                placeholder="개수"
-                                                                className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                                                            />
-                                                            <div className="text-xs text-gray-500 mt-1">1,500원/개</div>
-                                                        </td>
-                                                        <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                                                            <input
-                                                                type="number"
-                                                                value={item.largePrintingQuantity || ''}
-                                                                onChange={(e) => handleSafeNumberChange(index, 'largePrintingQuantity', e.target.value, 0, 9999, true)}
-                                                                min="0"
-                                                                placeholder="개수"
-                                                                className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                                                            />
-                                                            <div className="text-xs text-gray-500 mt-1">3,000원/개</div>
-                                                        </td>
-                                                        <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                                                            <div className="space-y-1">
-                                                                <input
-                                                                    type="number"
-                                                                    value={item.extraLargePrintingQuantity || ''}
-                                                                    onChange={(e) => handleSafeNumberChange(index, 'extraLargePrintingQuantity', e.target.value, 0, 9999, true)}
-                                                                    min="0"
-                                                                    placeholder="개수"
-                                                                    className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                                                                />
-                                                                <input
-                                                                    type="number"
-                                                                    value={item.extraLargePrintingPrice || ''}
-                                                                    onChange={(e) => handleSafeNumberChange(index, 'extraLargePrintingPrice', e.target.value, 0, 10000000, false)}
-                                                                    min="0"
-                                                                    placeholder="단가"
-                                                                    className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                                                                />
-                                                            </div>
-                                                        </td>
-                                                        <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                                                            <div className="space-y-1">
-                                                                <input
-                                                                    type="number"
-                                                                    value={item.designWorkQuantity || ''}
-                                                                    onChange={(e) => handleSafeNumberChange(index, 'designWorkQuantity', e.target.value, 0, 9999, true)}
-                                                                    min="0"
-                                                                    placeholder="개수"
-                                                                    className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                                                                />
-                                                                <input
-                                                                    type="number"
-                                                                    value={item.designWorkPrice || ''}
-                                                                    onChange={(e) => handleSafeNumberChange(index, 'designWorkPrice', e.target.value, 0, 10000000, false)}
-                                                                    min="0"
-                                                                    placeholder="단가"
-                                                                    className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                                                                />
-                                                            </div>
-                                                        </td>
+                                                                <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                                                                    <input
+                                                                        type="number"
+                                                                        value={item.smallPrintingQuantity || ''}
+                                                                        onChange={(e) => handleSafeNumberChange(index, 'smallPrintingQuantity', e.target.value, 0, 9999, true)}
+                                                                        min="0"
+                                                                        placeholder="개수"
+                                                                        className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
+                                                                    />
+                                                                    <div className="text-xs text-gray-500 mt-1">1,500원/개</div>
+                                                                </td>
+                                                                <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                                                                    <input
+                                                                        type="number"
+                                                                        value={item.largePrintingQuantity || ''}
+                                                                        onChange={(e) => handleSafeNumberChange(index, 'largePrintingQuantity', e.target.value, 0, 9999, true)}
+                                                                        min="0"
+                                                                        placeholder="개수"
+                                                                        className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
+                                                                    />
+                                                                    <div className="text-xs text-gray-500 mt-1">3,000원/개</div>
+                                                                </td>
+                                                                <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                                                                    <div className="space-y-1">
+                                                                        <input
+                                                                            type="number"
+                                                                            value={item.extraLargePrintingQuantity || ''}
+                                                                            onChange={(e) => handleSafeNumberChange(index, 'extraLargePrintingQuantity', e.target.value, 0, 9999, true)}
+                                                                            min="0"
+                                                                            placeholder="개수"
+                                                                            className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
+                                                                        />
+                                                                        <input
+                                                                            type="number"
+                                                                            value={item.extraLargePrintingPrice || ''}
+                                                                            onChange={(e) => handleSafeNumberChange(index, 'extraLargePrintingPrice', e.target.value, 0, 10000000, false)}
+                                                                            min="0"
+                                                                            placeholder="단가"
+                                                                            className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
+                                                                        />
+                                                                    </div>
+                                                                </td>
+                                                                <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                                                                    <div className="space-y-1">
+                                                                        <input
+                                                                            type="number"
+                                                                            value={item.designWorkQuantity || ''}
+                                                                            onChange={(e) => handleSafeNumberChange(index, 'designWorkQuantity', e.target.value, 0, 9999, true)}
+                                                                            min="0"
+                                                                            placeholder="개수"
+                                                                            className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
+                                                                        />
+                                                                        <input
+                                                                            type="number"
+                                                                            value={item.designWorkPrice || ''}
+                                                                            onChange={(e) => handleSafeNumberChange(index, 'designWorkPrice', e.target.value, 0, 10000000, false)}
+                                                                            min="0"
+                                                                            placeholder="단가"
+                                                                            className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
+                                                                        />
+                                                                    </div>
+                                                                </td>
                                                         <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right font-semibold text-green-600">
                                                             {calculateUnitPrice(item).toLocaleString()}원
                                                         </td>
@@ -714,18 +753,61 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                     </div>
                                 )}
 
-                                {/* 총 금액 표시 */}
+                                {/* 금액 정보 섹션 */}
                                 <div className="mt-6 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900 dark:to-indigo-900 rounded-lg border border-blue-200 dark:border-blue-700">
-                                    <div className="flex justify-between items-center">
-                                        <div className="flex items-center">
-                                            <svg className="w-6 h-6 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                                            </svg>
-                                            <span className="text-lg font-bold text-gray-900 dark:text-gray-100">총 주문 금액</span>
+                                    {/* 상품 금액 */}
+                                    <div className="flex justify-between items-center mb-3">
+                                        <span className="text-gray-700 dark:text-gray-300">상품 금액</span>
+                                        <span className="font-medium text-gray-900 dark:text-gray-100">{totalPrice.toLocaleString()}원</span>
+                                    </div>
+                                    
+                                    {/* 배송비 */}
+                                    <div className="mb-3">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <label className="text-gray-700 dark:text-gray-300">배송비</label>
+                                            <div className="flex items-center">
+                                                <input
+                                                    type="number"
+                                                    value={shippingFee}
+                                                    onChange={(e) => {
+                                                        setShippingFee(parseInt(e.target.value) || 0);
+                                                        setAutoShipping(false); // 수동 입력 시 자동 계산 해제
+                                                    }}
+                                                    min="0"
+                                                    step="100"
+                                                    disabled={autoShipping}
+                                                    className="w-32 px-3 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md text-right focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                                />
+                                                <span className="ml-2 text-gray-900 dark:text-gray-100">원</span>
+                                            </div>
                                         </div>
-                                        <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                                            {totalPrice.toLocaleString()}원
-                                        </span>
+                                        <div className="flex items-center text-sm">
+                                            <input
+                                                type="checkbox"
+                                                id="autoShipping"
+                                                checked={autoShipping}
+                                                onChange={(e) => setAutoShipping(e.target.checked)}
+                                                className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                            />
+                                            <label htmlFor="autoShipping" className="text-gray-600 dark:text-gray-400">
+                                                자동 계산 (100,000원 미만 주문 시 3,500원)
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* 구분선 */}
+                                    <div className="border-t border-blue-300 dark:border-blue-700 pt-3 mt-3">
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex items-center">
+                                                <svg className="w-6 h-6 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                                                </svg>
+                                                <span className="text-lg font-bold text-gray-900 dark:text-gray-100">총 주문 금액</span>
+                                            </div>
+                                            <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                                                {(totalPrice + shippingFee).toLocaleString()}원
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

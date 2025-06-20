@@ -60,6 +60,7 @@ const OrdersPage: React.FC = () => {
             setLoading(true);
             try {
                 const ordersData = await getOrders(showCompleted);
+                console.log('첫 번째 주문 원본 데이터:', ordersData[0]); // 디버깅용 로그
                 if (ordersData.length > 0) {
                     // Supabase에서 받은 데이터를 애플리케이션 형식으로 변환
                     const formattedOrders = ordersData.map(order => ({
@@ -71,6 +72,7 @@ const OrdersPage: React.FC = () => {
                         orderDate: order.order_date,
                         paymentMethod: order.payment_method,
                         totalPrice: order.total_price,
+                        shippingFee: order.shipping_fee || 0,  // 배송비 필드 추가
                         items: order.items.map((item: SupabaseOrderItem) => ({
                             id: `ITEM-${item.id}`,
                             product: item.product?.name || item.product_name || '알 수 없는 제품', // 정규화된 제품명 처리
@@ -88,6 +90,7 @@ const OrdersPage: React.FC = () => {
                             productInfo: item.product?.id ? item.product : undefined // 제품 정보 저장
                         }))
                     }));
+                    console.log('첫 번째 변환된 주문:', formattedOrders[0]); // 디버깅용 로그
                     setOrders(formattedOrders);
                 } else {
                     // 데이터가 없으면 초기 데이터로 설정하고 Supabase에 저장
@@ -431,7 +434,16 @@ const OrdersPage: React.FC = () => {
                                             ))}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                            {order.totalPrice.toLocaleString()}원
+                                            {Number(order.shippingFee) > 0 ? (
+                                                <div className="space-y-1">
+                                                    <div>{order.totalPrice.toLocaleString()}원</div>
+                                                    <div className="text-xs text-gray-400">
+                                                        (배송비: {Number(order.shippingFee).toLocaleString()}원)
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div>{order.totalPrice.toLocaleString()}원</div>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}>

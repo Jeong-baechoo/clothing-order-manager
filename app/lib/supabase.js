@@ -88,11 +88,13 @@ function sortOrderItems(items) {
   });
 }
 
+// 배송비 제품 관련 함수 제거 (더 이상 필요 없음)
+
 export async function addOrder(order) {
   try {
     console.log('추가할 주문 데이터:', JSON.stringify(order));
 
-    // 주문 데이터 추가
+    // 주문 데이터 추가 (shipping_fee 포함)
     const { data: orderData, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -103,7 +105,8 @@ export async function addOrder(order) {
         status: order.status,
         order_date: order.orderDate,
         payment_method: order.paymentMethod,
-        total_price: order.totalPrice
+        total_price: order.totalPrice,
+        shipping_fee: order.shippingFee || 0  // 배송비 필드 추가
       })
       .select()
       .single();
@@ -115,22 +118,24 @@ export async function addOrder(order) {
 
     console.log('주문 추가 결과:', orderData);
 
-    // 주문 항목 추가
+    // 주문 항목 추가 (배송비 제외)
     if (order.items && order.items.length > 0) {
-      const orderItems = order.items.map(item => ({
-        order_id: orderData.id,
-        product_id: item.productId || item.product, // 정규화된 product_id 사용
-        quantity: item.quantity || 0,
-        size: item.size || '',
-        color: item.color || '',
-        price: item.price || 0,
-        small_printing_quantity: item.smallPrintingQuantity || 0,
-        large_printing_quantity: item.largePrintingQuantity || 0,
-        extra_large_printing_quantity: item.extraLargePrintingQuantity || 0,
-        extra_large_printing_price: item.extraLargePrintingPrice || 0,
-        design_work_quantity: item.designWorkQuantity || 0,
-        design_work_price: item.designWorkPrice || 0
-      }));
+      const orderItems = order.items
+        .filter(item => item.product !== '배송비')  // 배송비 항목 제외
+        .map(item => ({
+          order_id: orderData.id,
+          product_id: item.productId || item.product, // 정규화된 product_id 사용
+          quantity: item.quantity || 0,
+          size: item.size || '',
+          color: item.color || '',
+          price: item.price || 0,
+          small_printing_quantity: item.smallPrintingQuantity || 0,
+          large_printing_quantity: item.largePrintingQuantity || 0,
+          extra_large_printing_quantity: item.extraLargePrintingQuantity || 0,
+          extra_large_printing_price: item.extraLargePrintingPrice || 0,
+          design_work_quantity: item.designWorkQuantity || 0,
+          design_work_price: item.designWorkPrice || 0
+        }));
 
       console.log('추가할 주문 항목:', JSON.stringify(orderItems));
 
@@ -140,7 +145,8 @@ export async function addOrder(order) {
         .select();
 
       if (itemsError) {
-        console.error('주문 항목 추가 오류 상세:', itemsError);
+        console.error('주문 항목 추가 오류 상세:', JSON.stringify(itemsError, null, 2));
+        console.error('실패한 주문 항목 데이터:', JSON.stringify(orderItems, null, 2));
         return { success: false, error: itemsError };
       }
 
@@ -179,6 +185,7 @@ export async function updateOrder(order) {
         status: order.status,
         payment_method: order.paymentMethod,
         total_price: order.totalPrice,
+        shipping_fee: order.shippingFee || 0,  // 배송비 필드 추가
         order_date: order.orderDate || existingOrder.order_date // 기존 날짜 유지
       };
 
@@ -219,23 +226,25 @@ export async function updateOrder(order) {
       return { success: false, error: deleteError };
     }
 
-    // 새 주문 항목 추가
+    // 새 주문 항목 추가 (배송비 제외)
     if (order.items && order.items.length > 0) {
       try {
-        const orderItems = order.items.map(item => ({
-          order_id: order.id,
-          product_id: item.productId || item.product, // 정규화된 product_id 사용
-          quantity: item.quantity || 0,
-          size: item.size || '',
-          color: item.color || '',
-          price: item.price || 0,
-          small_printing_quantity: item.smallPrintingQuantity || 0,
-          large_printing_quantity: item.largePrintingQuantity || 0,
-          extra_large_printing_quantity: item.extraLargePrintingQuantity || 0,
-          extra_large_printing_price: item.extraLargePrintingPrice || 0,
-          design_work_quantity: item.designWorkQuantity || 0,
-          design_work_price: item.designWorkPrice || 0
-        }));
+        const orderItems = order.items
+          .filter(item => item.product !== '배송비')  // 배송비 항목 제외
+          .map(item => ({
+            order_id: order.id,
+            product_id: item.productId || item.product, // 정규화된 product_id 사용
+            quantity: item.quantity || 0,
+            size: item.size || '',
+            color: item.color || '',
+            price: item.price || 0,
+            small_printing_quantity: item.smallPrintingQuantity || 0,
+            large_printing_quantity: item.largePrintingQuantity || 0,
+            extra_large_printing_quantity: item.extraLargePrintingQuantity || 0,
+            extra_large_printing_price: item.extraLargePrintingPrice || 0,
+            design_work_quantity: item.designWorkQuantity || 0,
+            design_work_price: item.designWorkPrice || 0
+          }));
 
         console.log('추가할 주문 항목:', JSON.stringify(orderItems));
 

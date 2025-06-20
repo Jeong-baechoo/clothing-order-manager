@@ -67,6 +67,7 @@ export interface Order {
     paymentMethod: string;
     items: OrderItem[];
     totalPrice: number;
+    shippingFee?: number;  // 배송비 필드 추가
 }
 
 // 주문 상태 한글 표시
