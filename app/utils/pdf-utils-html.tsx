@@ -30,31 +30,8 @@ export const generateInvoiceHTML = (order: Order): string => {
     fontSize = '12px';
   }
 
-  // Sort items: 상품명 > 색상 > 사이즈
-  // 주문번호는 모든 아이템이 같은 주문에 속하므로 정렬 기준에서 제외
-  const sortedItems = [...order.items].sort((a, b) => {
-    // 1. 상품명 비교 - 자연 정렬 (숫자가 포함된 경우 올바르게 정렬)
-    const productCompare = a.product.localeCompare(b.product, 'ko', { numeric: true });
-    if (productCompare !== 0) return productCompare;
-    
-    // 2. 색상 비교
-    const colorCompare = a.color.localeCompare(b.color, 'ko');
-    if (colorCompare !== 0) return colorCompare;
-    
-    // 3. 사이즈 비교 - 사이즈 순서 정의
-    const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
-    const sizeIndexA = sizeOrder.indexOf(a.size);
-    const sizeIndexB = sizeOrder.indexOf(b.size);
-    
-    // 정의된 사이즈가 아닌 경우 문자열 비교
-    if (sizeIndexA === -1 && sizeIndexB === -1) {
-      return a.size.localeCompare(b.size, 'ko', { numeric: true });
-    }
-    if (sizeIndexA === -1) return 1;
-    if (sizeIndexB === -1) return -1;
-    
-    return sizeIndexA - sizeIndexB;
-  });
+  // 정렬하지 않고 원래 순서대로 사용
+  const sortedItems = order.items;
 
   // Generate table rows
   let tableRows = '';
