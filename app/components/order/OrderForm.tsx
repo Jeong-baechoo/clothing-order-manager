@@ -50,7 +50,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
 
     // 로컬 상품 데이터 (기존 DB에 없는 필드들)
     const productSizes = ['CS', 'CM', 'CL', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
-    const productColors = ['화이트', '블랙', '그레이', '네이비', '레드', '블루', '그린', '옐로우', '핑크', '브라운'];
+    const productColors = ['화이트', '블랙', '그레이', '네이비', '레드', '블루', '그린', '옐로우', '오렌지', '핑크', '브라운'];
 
     // 초기 데이터가 있으면 폼 데이터 설정
     useEffect(() => {
