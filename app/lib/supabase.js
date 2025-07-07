@@ -112,7 +112,9 @@ export async function addOrder(order) {
       .single();
 
     if (orderError) {
-      console.error('주문 추가 오류 상세:', orderError);
+      console.error('주문 추가 오류 상세:', JSON.stringify(orderError, null, 2));
+      console.error('오류 메시지:', orderError.message);
+      console.error('오류 코드:', orderError.code);
       return { success: false, error: orderError };
     }
 
@@ -135,7 +137,7 @@ export async function addOrder(order) {
           extra_large_printing_price: item.extraLargePrintingPrice || 0,
           design_work_quantity: item.designWorkQuantity || 0,
           design_work_price: item.designWorkPrice || 0,
-          remarks: item.remarks || ''
+          remarks: item.remarks || '-'
         }));
 
       console.log('추가할 주문 항목:', JSON.stringify(orderItems));
@@ -245,7 +247,7 @@ export async function updateOrder(order) {
             extra_large_printing_price: item.extraLargePrintingPrice || 0,
             design_work_quantity: item.designWorkQuantity || 0,
             design_work_price: item.designWorkPrice || 0,
-            remarks: item.remarks || ''
+            remarks: item.remarks || '-'
           }));
 
         console.log('추가할 주문 항목:', JSON.stringify(orderItems));

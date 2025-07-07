@@ -128,14 +128,16 @@ const OrdersPage: React.FC = () => {
 
     // 새 주문 추가
     const handleAddOrder = async (orderData: Partial<Order>) => {
-        // 년도월 기반 고유 ID 생성
-        const generateOrderId = () => {
+        // 년도월 기반 고유 ID 생성 (데이터베이스에서 최신 번호 조회)
+        const generateOrderId = async () => {
             const now = new Date();
             const year = now.getFullYear().toString().slice(-2);
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const yearMonth = `${year}${month}`;
             
-            const monthOrders = orders.filter(order => order.id.startsWith(`${yearMonth}-`));
+            // 데이터베이스에서 해당 월의 모든 주문 ID 가져오기
+            const allOrders = await getOrders(true); // 완료된 주문도 포함
+            const monthOrders = allOrders.filter(order => order.id.startsWith(`${yearMonth}-`));
             
             const maxOrderNumber = monthOrders.reduce((max, order) => {
                 const match = order.id.match(/^\d{4}-(\d+)$/);
@@ -149,7 +151,7 @@ const OrdersPage: React.FC = () => {
         };
 
         const newOrder: Order = {
-            id: generateOrderId(),
+            id: await generateOrderId(),
             orderDate: new Date().toISOString().split('T')[0],
             ...orderData,
         } as Order;
