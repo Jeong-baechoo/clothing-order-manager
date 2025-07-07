@@ -134,7 +134,8 @@ export async function addOrder(order) {
           extra_large_printing_quantity: item.extraLargePrintingQuantity || 0,
           extra_large_printing_price: item.extraLargePrintingPrice || 0,
           design_work_quantity: item.designWorkQuantity || 0,
-          design_work_price: item.designWorkPrice || 0
+          design_work_price: item.designWorkPrice || 0,
+          remarks: item.remarks || ''
         }));
 
       console.log('추가할 주문 항목:', JSON.stringify(orderItems));
@@ -243,7 +244,8 @@ export async function updateOrder(order) {
             extra_large_printing_quantity: item.extraLargePrintingQuantity || 0,
             extra_large_printing_price: item.extraLargePrintingPrice || 0,
             design_work_quantity: item.designWorkQuantity || 0,
-            design_work_price: item.designWorkPrice || 0
+            design_work_price: item.designWorkPrice || 0,
+            remarks: item.remarks || ''
           }));
 
         console.log('추가할 주문 항목:', JSON.stringify(orderItems));

@@ -54,6 +54,7 @@ export interface OrderItem {
     designWorkQuantity?: number;
     designWorkPrice?: number;
     productInfo?: ProductInfo; // 정규화된 제품 정보
+    remarks?: string; // 비고 필드 추가
 }
 
 // 주문 타입 정의

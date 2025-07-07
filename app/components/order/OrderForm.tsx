@@ -35,7 +35,8 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                 extraLargePrintingQuantity: 0,
                 extraLargePrintingPrice: 0,
                 designWorkQuantity: 0,
-                designWorkPrice: 0
+                designWorkPrice: 0,
+                remarks: '-' // 비고 기본값 추가
             }
         ]
     });
@@ -122,7 +123,8 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
             extraLargePrintingQuantity: 0,
             extraLargePrintingPrice: 0,
             designWorkQuantity: 0,
-            designWorkPrice: 0
+            designWorkPrice: 0,
+            remarks: '-' // 비고 기본값 추가
         };
 
         setOrderData(prev => ({
@@ -506,9 +508,9 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                             <div className="p-6">
                                 {orderData.items && orderData.items.length > 0 ? (
                                     <div className="overflow-x-auto max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg min-h-96">
-                                        <table className="w-full border-collapse border border-gray-300 dark:border-gray-600" style={{tableLayout: 'fixed', minWidth: '1550px'}}>
+                                        <table className="w-full border-collapse border border-gray-300 dark:border-gray-600" style={{tableLayout: 'fixed', minWidth: '1700px'}}>
                                             <colgroup>
-                                                <col style={{ width: '50px' }} /><col style={{ width: '200px' }} /><col style={{ width: '80px' }} /><col style={{ width: '100px' }} /><col style={{ width: '100px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '140px' }} /><col style={{ width: '140px' }} /><col style={{ width: '120px' }} /><col style={{ width: '140px' }} />
+                                                <col style={{ width: '50px' }} /><col style={{ width: '200px' }} /><col style={{ width: '80px' }} /><col style={{ width: '100px' }} /><col style={{ width: '100px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '140px' }} /><col style={{ width: '140px' }} /><col style={{ width: '120px' }} /><col style={{ width: '150px' }} /><col style={{ width: '140px' }} />
                                             </colgroup>
                                             <thead className="sticky top-0 bg-gray-100 dark:bg-gray-700 z-10">
                                                 <tr className="bg-gray-100 dark:bg-gray-700">
@@ -524,6 +526,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">디자인작업</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">단가</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">총 금액</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">비고</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">관리</th>
                                                 </tr>
                                             </thead>
@@ -685,6 +688,15 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                         </td>
                                                         <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right font-semibold text-blue-600">
                                                             {calculateItemTotal(item).toLocaleString()}원
+                                                        </td>
+                                                        <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                                                            <input
+                                                                type="text"
+                                                                value={item.remarks !== undefined ? item.remarks : '-'}
+                                                                onChange={(e) => handleItemChange(index, 'remarks', e.target.value)}
+                                                                placeholder="비고"
+                                                                className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
+                                                            />
                                                         </td>
                                                         <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
                                                             <div className="flex justify-center items-center space-x-1">

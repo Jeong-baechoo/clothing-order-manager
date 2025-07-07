@@ -45,7 +45,7 @@ export const generateInvoiceHTML = (order: Order): string => {
         <div class="col-quantity">${item.quantity}</div>
         <div class="col-price">${calculateUnitPrice(item).toLocaleString()}</div>
         <div class="col-amount">${calculateItemTotal(item).toLocaleString()}</div>
-        <div class="col-remarks"></div>
+        <div class="col-remarks">${item.remarks || ''}</div>
       </div>
     `;
   });
@@ -59,7 +59,7 @@ export const generateInvoiceHTML = (order: Order): string => {
         <div class="col-quantity">1</div>
         <div class="col-price">${shippingFee.toLocaleString()}</div>
         <div class="col-amount">${shippingFee.toLocaleString()}</div>
-        <div class="col-remarks"></div>
+        <div class="col-remarks">-</div>
       </div>
     `;
   }
