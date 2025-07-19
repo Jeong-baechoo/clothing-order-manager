@@ -14,26 +14,29 @@ export const generateInvoiceHTML = (order: Order): string => {
   const totalWithVat = grandTotal + vat;
   const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
-  // 상품 개수에 따른 동적 간격 계산
+  // 상품 개수에 따른 동적 간격 계산 (단일 페이지 최적화)
   const itemCount = order.items.length;
   let rowPadding = '8px'; // 기본값
   let fontSize = '13px'; // 기본값
 
-  if (itemCount > 20) {
+  if (itemCount > 25) {
+    rowPadding = '1px';
+    fontSize = '9px';
+  } else if (itemCount > 20) {
     rowPadding = '2px';
-    fontSize = '11px';
+    fontSize = '10px';
   } else if (itemCount > 15) {
     rowPadding = '3px';
-    fontSize = '12px';
+    fontSize = '11px';
   } else if (itemCount > 10) {
-    rowPadding = '5px';
+    rowPadding = '4px';
     fontSize = '12px';
   }
 
   // 정렬하지 않고 원래 순서대로 사용
   const sortedItems = order.items;
 
-  // Generate table rows
+  // Generate table rows (단순한 단일 페이지 구조)
   let tableRows = '';
 
   // Add main order items
@@ -63,10 +66,6 @@ export const generateInvoiceHTML = (order: Order): string => {
       </div>
     `;
   }
-
-  // Note: 프린팅과 디자인 비용은 이미 단가에 포함되어 있으므로 별도 행으로 표시하지 않음
-
-  // 빈 행 추가 제거 - 반응형으로 자동 조절되도록 함
 
   return `
     <!DOCTYPE html>
@@ -166,6 +165,7 @@ export const generateInvoiceHTML = (order: Order): string => {
           padding-bottom: 7px;
         }
 
+
         /* Main content */
         main {
           flex: 1 1 auto;
@@ -224,11 +224,10 @@ export const generateInvoiceHTML = (order: Order): string => {
 
         .table-header {
           display: flex;
-          font-size: ${itemCount > 20 ? '12px' : itemCount > 15 ? '13px' : '14px'};
+          font-size: ${fontSize === '9px' ? '10px' : fontSize === '10px' ? '11px' : fontSize === '11px' ? '12px' : '14px'};
           font-weight: bold;
           text-align: center;
-          padding: ${itemCount > 20 ? '3px 0' : '5px 0'};
-          /* border-bottom: 1px solid #000; */
+          padding: ${rowPadding === '1px' ? '2px 0' : rowPadding === '2px' ? '3px 0' : '5px 0'};
           color: #000000;
         }
 
@@ -244,7 +243,7 @@ export const generateInvoiceHTML = (order: Order): string => {
 
         .table-row {
           display: flex;
-          min-height: ${itemCount > 20 ? '20px' : itemCount > 15 ? '22px' : '25px'};
+          min-height: ${fontSize === '9px' ? '16px' : fontSize === '10px' ? '18px' : fontSize === '11px' ? '20px' : '25px'};
           align-items: center;
           padding: ${rowPadding} 0;
           color: #000000;
@@ -257,33 +256,33 @@ export const generateInvoiceHTML = (order: Order): string => {
 
         .col-product {
           width: 25%;
-          padding: 0 ${itemCount > 20 ? '2' : '4'}px;
+          padding: 0 ${fontSize === '9px' || fontSize === '10px' ? '2' : '4'}px;
           text-align: left;
         }
 
         .col-size {
           width: 20%;
-          padding: 0 ${itemCount > 20 ? '2' : '4'}px;
+          padding: 0 ${fontSize === '9px' || fontSize === '10px' ? '2' : '4'}px;
         }
 
         .col-quantity {
           width: 10%;
-          padding: 0 ${itemCount > 20 ? '2' : '4'}px;
+          padding: 0 ${fontSize === '9px' || fontSize === '10px' ? '2' : '4'}px;
         }
 
         .col-price {
           width: 15%;
-          padding: 0 ${itemCount > 20 ? '2' : '4'}px;
+          padding: 0 ${fontSize === '9px' || fontSize === '10px' ? '2' : '4'}px;
         }
 
         .col-amount {
           width: 15%;
-          padding: 0 ${itemCount > 20 ? '2' : '4'}px;
+          padding: 0 ${fontSize === '9px' || fontSize === '10px' ? '2' : '4'}px;
         }
 
         .col-remarks {
           width: 15%;
-          padding: 0 ${itemCount > 20 ? '2' : '4'}px;
+          padding: 0 ${fontSize === '9px' || fontSize === '10px' ? '2' : '4'}px;
         }
 
         /* Footer */
@@ -297,11 +296,11 @@ export const generateInvoiceHTML = (order: Order): string => {
         .final-summary {
           border-top: 2.5px solid black;
           border-bottom: 2.5px solid black;
-          padding: ${itemCount > 20 ? '8px 0' : '12px 0'};
+          padding: ${fontSize === '9px' || fontSize === '10px' ? '8px 0' : '12px 0'};
           display: flex;
           justify-content: space-between;
           align-items: stretch;
-          min-height: ${itemCount > 20 ? '60px' : '80px'};
+          min-height: ${fontSize === '9px' || fontSize === '10px' ? '60px' : '80px'};
         }
 
         .notes-ea-container {
@@ -393,7 +392,6 @@ export const generateInvoiceHTML = (order: Order): string => {
               </div>
             </section>
 
-
             <!-- Items Table -->
             <section class="items-table">
               <!-- Table Header -->
@@ -478,7 +476,7 @@ export const generateHTMLPDF = async (order: Order, preview: boolean = false): P
       throw new Error('Invoice element not found');
     }
 
-    // PDF options - 정확한 A4 크기 설정
+    // PDF options - 단일 페이지 최적화
     const options = {
       margin: 0,
       filename: `${order.customerName}_주문서.pdf`,
