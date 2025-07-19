@@ -4,10 +4,11 @@ import React, { useState, useEffect } from 'react';
 import OrderDetailView from '../components/order/OrderDetailView';
 import OrderStatistics from '../components/order/OrderStatistics';
 import OrderExport from '../components/order/OrderExport';
+import OrderMemo from '../components/order/OrderMemo';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import OrderFormModal from '../components/order/OrderFormModal';
 import { Order, getStatusColor, orderStatusMap } from '../models/orderTypes';
-import { getOrders, addOrder, updateOrder, deleteOrder, updateOrderStatus } from '../lib/supabase';
+import { getOrders, addOrder, updateOrder, deleteOrder, updateOrderStatus, updateOrderMemo } from '../lib/supabase';
 
 // Supabase에서 가져온 주문 항목의 타입 정의 (정규화된 스키마)
 interface SupabaseOrderItem {
@@ -53,6 +54,10 @@ const OrdersPage: React.FC = () => {
     // 삭제 확인 대화상자 상태
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
+    
+    // 메모 관련 상태
+    const [isMemoOpen, setIsMemoOpen] = useState(false);
+    const [currentMemoOrder, setCurrentMemoOrder] = useState<Order | null>(null);
 
     // Supabase에서 데이터 로드
     useEffect(() => {
@@ -73,6 +78,7 @@ const OrdersPage: React.FC = () => {
                         paymentMethod: order.payment_method,
                         totalPrice: order.total_price,
                         shippingFee: order.shipping_fee || 0,  // 배송비 필드 추가
+                        memo: order.memo || '',  // 메모 필드 추가
                         items: order.items.map((item: SupabaseOrderItem) => ({
                             id: `ITEM-${item.id}`,
                             product: item.product?.name || item.product_name || '알 수 없는 제품', // 정규화된 제품명 처리
@@ -299,12 +305,51 @@ const OrdersPage: React.FC = () => {
         setIsFormVisible(true);
     };
 
+    // 메모 열기
+    const openMemo = (order: Order) => {
+        setCurrentMemoOrder(order);
+        setIsMemoOpen(true);
+    };
+
+    // 메모 저장
+    const handleMemoSave = async (memo: string) => {
+        if (!currentMemoOrder) return;
+
+        try {
+            const success = await updateOrderMemo(currentMemoOrder.id, memo);
+            if (success) {
+                // 로컬 상태 업데이트
+                setOrders(orders.map(order => 
+                    order.id === currentMemoOrder.id 
+                        ? { ...order, memo }
+                        : order
+                ));
+                alert('메모가 저장되었습니다.');
+            } else {
+                alert('메모 저장에 실패했습니다.');
+            }
+        } catch (error) {
+            console.error('메모 저장 중 오류 발생:', error);
+            alert('메모 저장 중 오류가 발생했습니다.');
+        }
+    };
+
     return (
-        <div className="max-w-7xl mx-auto py-8">
+        <div className="max-w-full mx-auto py-8 px-4">
             {selectedOrder && (
                 <OrderDetailView
                     order={selectedOrder}
                     onClose={() => setSelectedOrder(null)}
+                />
+            )}
+
+            {isMemoOpen && currentMemoOrder && (
+                <OrderMemo
+                    orderId={currentMemoOrder.id}
+                    isOpen={isMemoOpen}
+                    onClose={() => setIsMemoOpen(false)}
+                    memo={currentMemoOrder.memo || ''}
+                    onSave={handleMemoSave}
                 />
             )}
 
@@ -468,6 +513,16 @@ const OrdersPage: React.FC = () => {
                                                     className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                                 >
                                                     편집
+                                                </button>
+                                                <button
+                                                    onClick={() => openMemo(order)}
+                                                    className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                                                    title={order.memo ? '메모: ' + order.memo.substring(0, 50) + (order.memo.length > 50 ? '...' : '') : '메모 추가'}
+                                                >
+                                                    메모
+                                                    {order.memo && (
+                                                        <span className="ml-1 text-xs text-green-600 dark:text-green-400">●</span>
+                                                    )}
                                                 </button>
                                                 <button
                                                     onClick={() => openDeleteDialog(order.id)}

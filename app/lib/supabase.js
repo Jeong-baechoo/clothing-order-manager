@@ -106,7 +106,8 @@ export async function addOrder(order) {
         order_date: order.orderDate,
         payment_method: order.paymentMethod,
         total_price: order.totalPrice,
-        shipping_fee: order.shippingFee || 0  // 배송비 필드 추가
+        shipping_fee: order.shippingFee || 0,  // 배송비 필드 추가
+        memo: order.memo || null  // 메모 필드 추가
       })
       .select()
       .single();
@@ -189,6 +190,7 @@ export async function updateOrder(order) {
         payment_method: order.paymentMethod,
         total_price: order.totalPrice,
         shipping_fee: order.shippingFee || 0,  // 배송비 필드 추가
+        memo: order.memo || null,  // 메모 필드 추가
         order_date: order.orderDate || existingOrder.order_date // 기존 날짜 유지
       };
 
@@ -343,6 +345,20 @@ export async function updateOrderStatus(orderId, newStatus) {
 
   if (error) {
     console.error('주문 상태 업데이트 오류:', error);
+    return false;
+  }
+
+  return true;
+}
+
+export async function updateOrderMemo(orderId, memo) {
+  const { error } = await supabase
+    .from('orders')
+    .update({ memo: memo || null })
+    .eq('id', orderId);
+
+  if (error) {
+    console.error('주문 메모 업데이트 오류:', error);
     return false;
   }
 
