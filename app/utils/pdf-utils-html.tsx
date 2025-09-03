@@ -525,7 +525,7 @@ export const generateInvoiceJPEG = async (order: Order, preview: boolean = false
 
       // Clean up
       document.body.removeChild(container);
-    }, 'image/jpeg', 0.95);
+    }, 'image/jpeg', 1.0); // Maximum quality (1.0)
 
   } catch (error) {
     console.error('Error generating JPEG:', error);
