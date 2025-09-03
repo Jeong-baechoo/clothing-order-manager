@@ -5,7 +5,7 @@ import { calculateUnitPrice, calculateItemTotal } from './order-calculations';
 export const generateInvoiceHTML = (order: Order): string => {
   console.log('generateInvoiceHTML - order:', order); // 디버깅용
   console.log('generateInvoiceHTML - shippingFee:', order.shippingFee); // 디버깅용
-  
+
   // Calculate totals using the shared calculation logic
   const itemsTotal = order.items.reduce((sum, item) => sum + calculateItemTotal(item), 0);
   const shippingFee = Number(order.shippingFee) || 0;
@@ -304,12 +304,13 @@ export const generateInvoiceHTML = (order: Order): string => {
         }
 
         .notes-ea-container {
-          font-size: 12px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
           width: 45%;
+          font-size: 12px;
           color: #000000;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-around;
+          gap: 8px;
         }
 
         .price-summary {
@@ -347,6 +348,7 @@ export const generateInvoiceHTML = (order: Order): string => {
           text-align: right;
           color: #000000;
         }
+
 
         /* Page number */
         .page-number {
@@ -415,8 +417,15 @@ export const generateInvoiceHTML = (order: Order): string => {
             <!-- Final Summary Section -->
             <section class="final-summary">
               <div class="notes-ea-container">
-                <span style="font-weight: bold;">NOTES</span>
-                <span>${totalQuantity} EA</span>
+                <div class="price-row" style="justify-content: flex-end;">
+                  <div style="font-size: 11px; color: #333;">
+                    • 계산서 미발행시 토탈 금액으로 입금
+                  </div>
+                </div>
+                <div class="price-row">
+                  <span style="font-weight: bold;">NOTES</span>
+                  <span>${totalQuantity} EA</span>
+                </div>
               </div>
               <div class="price-summary">
                 <div class="price-row">
@@ -446,7 +455,85 @@ export const generateInvoiceHTML = (order: Order): string => {
   `;
 };
 
-// Generate PDF from HTML invoice
+// Generate JPEG image from HTML invoice
+export const generateInvoiceJPEG = async (order: Order, preview: boolean = false): Promise<void> => {
+  try {
+    // Dynamically import html2canvas
+    const html2canvasModule = await import('html2canvas');
+    const html2canvas = html2canvasModule.default;
+
+    // Generate the HTML content
+    const htmlContent = generateInvoiceHTML(order);
+
+    // Create a temporary container
+    const container = document.createElement('div');
+    container.innerHTML = htmlContent;
+    container.style.position = 'fixed';
+    container.style.left = '-9999px';
+    container.style.top = '0';
+    container.style.width = '794px'; // A4 width in pixels
+    container.style.backgroundColor = 'white';
+    container.style.zIndex = '-1';
+    document.body.appendChild(container);
+
+    // Get the A4 container element
+    const element = container.querySelector('.a4-container') as HTMLElement;
+
+    if (!element) {
+      throw new Error('Invoice element not found');
+    }
+
+    // Wait a bit for fonts and images to load
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Ensure proper styling before capturing
+    element.style.transform = 'none';
+    element.style.position = 'static';
+    element.style.backgroundColor = '#ffffff';
+
+    // Generate canvas with high quality settings
+    const canvas = await html2canvas(element, {
+      useCORS: true,
+      allowTaint: false,
+      width: 794,
+      height: 1123
+    });
+
+    // Convert canvas to JPEG blob
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        throw new Error('Failed to generate image blob');
+      }
+
+      if (preview) {
+        // Open in new tab for preview
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+      } else {
+        // Download the image
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${order.customerName}_견적서.jpg`;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+
+      // Clean up
+      document.body.removeChild(container);
+    }, 'image/jpeg', 0.95);
+
+  } catch (error) {
+    console.error('Error generating JPEG:', error);
+    throw error;
+  }
+};
+
+// Generate PDF from HTML invoice (기존 함수 유지)
 export const generateHTMLPDF = async (order: Order, preview: boolean = false): Promise<void> => {
   try {
     // Dynamically import html2pdf to avoid SSR issues
