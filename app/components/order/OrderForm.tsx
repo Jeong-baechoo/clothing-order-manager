@@ -353,7 +353,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
 
     // 로컬 상품 데이터 (기존 DB에 없는 필드들)
     const productSizes = ['CS', 'CM', 'CL', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
-    const productColors = ['화이트', '블랙', '그레이', '네이비', '레드', '블루', '그린', '옐로우', '오렌지', '핑크', '브라운'];
+    const productColors = ['화이트', '블랙', '그레이', '네이비', '레드', '블루', '그린', '옐로우', '오렌지', '핑크', '브라운', '레드켓', '태극'];
 
     // 드래그 앤 드롭을 위한 센서 설정
     const sensors = useSensors(
