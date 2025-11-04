@@ -31,6 +31,7 @@ interface SupabaseOrderItem {
     extra_large_printing_price?: number;
     design_work_quantity?: number;
     design_work_price?: number;
+    remarks?: string; // 비고 필드 추가
 }
 
 // 에러 객체의 타입 정의
@@ -93,6 +94,7 @@ const OrdersPage: React.FC = () => {
                             extraLargePrintingPrice: item.extra_large_printing_price || 0,
                             designWorkQuantity: item.design_work_quantity || 0,
                             designWorkPrice: item.design_work_price || 0,
+                            remarks: item.remarks || '-', // 비고 필드 추가
                             productInfo: item.product?.id ? item.product : undefined // 제품 정보 저장
                         }))
                     }));
@@ -166,7 +168,38 @@ const OrdersPage: React.FC = () => {
             const result = await addOrder(newOrder);
 
             if (result.success) {
-                setOrders([...orders, newOrder]);
+                // DB에서 최신 데이터 다시 불러오기
+                const updatedOrders = await getOrders(showCompleted);
+                const formattedOrders = updatedOrders.map(order => ({
+                    id: order.id,
+                    customerName: order.customer_name,
+                    phone: order.phone,
+                    address: order.address,
+                    status: order.status,
+                    orderDate: order.order_date,
+                    paymentMethod: order.payment_method,
+                    totalPrice: order.total_price,
+                    shippingFee: order.shipping_fee || 0,
+                    memo: order.memo || '',
+                    items: order.items.map((item: SupabaseOrderItem) => ({
+                        id: `ITEM-${item.id}`,
+                        product: item.product?.name || item.product_name || '알 수 없는 제품',
+                        productId: item.product_id || item.product?.id,
+                        quantity: item.quantity,
+                        size: item.size,
+                        color: item.color,
+                        price: item.price,
+                        smallPrintingQuantity: item.small_printing_quantity || 0,
+                        largePrintingQuantity: item.large_printing_quantity || 0,
+                        extraLargePrintingQuantity: item.extra_large_printing_quantity || 0,
+                        extraLargePrintingPrice: item.extra_large_printing_price || 0,
+                        designWorkQuantity: item.design_work_quantity || 0,
+                        designWorkPrice: item.design_work_price || 0,
+                        remarks: item.remarks || '-',
+                        productInfo: item.product?.id ? item.product : undefined
+                    }))
+                }));
+                setOrders(formattedOrders);
                 alert('주문이 성공적으로 추가되었습니다.');
             } else {
                 console.error('주문 추가 실패:', result.error);
@@ -205,20 +238,38 @@ const OrdersPage: React.FC = () => {
             console.log('업데이트 결과:', result);
 
             if (result.success) {
-                // 업데이트 성공 시 로컬 상태 업데이트
-                setOrders(
-                    orders.map((order) => {
-                        if (order.id === currentOrder.id) {
-                            return {
-                                ...order,
-                                ...orderData,
-                                // items 배열이 orderData에 있으면 그것을 사용, 없으면 order의 items 사용
-                                items: orderData.items || order.items
-                            } as Order;
-                        }
-                        return order;
-                    })
-                );
+                // DB에서 최신 데이터 다시 불러오기
+                const updatedOrders = await getOrders(showCompleted);
+                const formattedOrders = updatedOrders.map(order => ({
+                    id: order.id,
+                    customerName: order.customer_name,
+                    phone: order.phone,
+                    address: order.address,
+                    status: order.status,
+                    orderDate: order.order_date,
+                    paymentMethod: order.payment_method,
+                    totalPrice: order.total_price,
+                    shippingFee: order.shipping_fee || 0,
+                    memo: order.memo || '',
+                    items: order.items.map((item: SupabaseOrderItem) => ({
+                        id: `ITEM-${item.id}`,
+                        product: item.product?.name || item.product_name || '알 수 없는 제품',
+                        productId: item.product_id || item.product?.id,
+                        quantity: item.quantity,
+                        size: item.size,
+                        color: item.color,
+                        price: item.price,
+                        smallPrintingQuantity: item.small_printing_quantity || 0,
+                        largePrintingQuantity: item.large_printing_quantity || 0,
+                        extraLargePrintingQuantity: item.extra_large_printing_quantity || 0,
+                        extraLargePrintingPrice: item.extra_large_printing_price || 0,
+                        designWorkQuantity: item.design_work_quantity || 0,
+                        designWorkPrice: item.design_work_price || 0,
+                        remarks: item.remarks || '-',
+                        productInfo: item.product?.id ? item.product : undefined
+                    }))
+                }));
+                setOrders(formattedOrders);
                 // 성공 메시지 표시
                 alert('주문이 성공적으로 업데이트되었습니다.');
             } else {

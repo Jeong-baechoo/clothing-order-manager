@@ -118,6 +118,7 @@ export default function AnalyticsPage() {
                     extra_large_printing_price?: number;
                     design_work_quantity?: number;
                     design_work_price?: number;
+                    remarks?: string;
                 }) => {
                     // 안전한 아이템 변환
                     const productInfo = item.product as { id?: string; name?: string; default_price?: number; wholesale_price?: number } | undefined;
@@ -135,6 +136,7 @@ export default function AnalyticsPage() {
                         extraLargePrintingPrice: Number(item.extra_large_printing_price) || 0,
                         designWorkQuantity: Number(item.design_work_quantity) || 0,
                         designWorkPrice: Number(item.design_work_price) || 0,
+                        remarks: item.remarks || '-', // 비고 필드 추가
                         // 정규화된 제품 정보 추가
                         productInfo: productInfo?.id ? productInfo : undefined
                     };
