@@ -67,6 +67,15 @@ export const generateInvoiceHTML = (order: Order): string => {
     `;
   }
 
+  // 헤더 폰트 크기 계산
+  const headerFontSize = fontSize === '9px' ? '10px' : fontSize === '10px' ? '11px' : fontSize === '11px' ? '12px' : '14px';
+  const headerPadding = rowPadding === '1px' ? '2px 0' : rowPadding === '2px' ? '3px 0' : '5px 0';
+  const rowMinHeight = fontSize === '9px' ? '16px' : fontSize === '10px' ? '18px' : fontSize === '11px' ? '20px' : '25px';
+  const colPadding = fontSize === '9px' || fontSize === '10px' ? '2px' : '4px';
+  const isCompact = fontSize === '9px' || fontSize === '10px';
+  const summaryPadding = isCompact ? '8px 0' : '12px 0';
+  const summaryMinHeight = isCompact ? '60px' : '80px';
+
   return `
     <!DOCTYPE html>
     <html lang="ko">
@@ -90,43 +99,36 @@ export const generateInvoiceHTML = (order: Order): string => {
           padding: 0;
         }
 
-        /* A4 Container */
+        /* A4 Container - 794px x 1123px (96dpi 기준) */
         .a4-container {
-          width: 210mm;
-          min-height: 297mm;
-          margin: 0;
+          width: 794px;
+          height: 1123px;
           padding: 15mm 10mm;
           background-color: #f9f9f9;
           position: relative;
-          overflow: visible;
-          box-sizing: border-box;
-          display: flex;
-          flex-direction: column;
+          overflow: hidden;
         }
 
-        /* Invoice container with padding inside A4 */
+        /* Invoice container - 원본 구조 유지 */
         #invoice-page {
           width: 100%;
-          min-height: 100%;
-          padding: 30mm 15mm;
+          height: 100%;
+          padding: 45px;
           display: flex;
           flex-direction: column;
           background-color: #f9f9f9;
-          box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.05);
-          box-sizing: border-box;
-          flex: 1;
         }
 
-        /* Header */
+        /* Header - 원본과 동일한 음수 마진 구조 */
         header {
           background-color: #1a1a1a;
           color: white;
-          margin: -30mm -15mm 15mm -15mm;
-          padding: 15mm 15mm 15mm 15mm;
+          margin: -45px -45px 35px -45px;
+          padding: 40px 45px;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          position: relative;
+          flex-shrink: 0;
           background-image:
             repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 255, 255, 0.03) 2px, rgba(255, 255, 255, 0.03) 4px),
             repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255, 255, 255, 0.03) 2px, rgba(255, 255, 255, 0.03) 4px);
@@ -136,68 +138,51 @@ export const generateInvoiceHTML = (order: Order): string => {
           height: 66px;
           width: auto;
           object-fit: contain;
-          /*left: 50%;*/
         }
 
         header .company-info {
           text-align: right;
           font-size: 12px;
           opacity: 0.9;
-          line-height: 1.3;
-          margin-left: auto;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
+          line-height: 1.5;
         }
-        
+
         header .company-info p {
           margin: 0;
           padding: 5px 0;
-          line-height: 1.5;
         }
-        
-        header .company-info p:first-child {
-          padding-top: 7px;
-        }
-        
-        header .company-info p:last-child {
-          margin-bottom: 0;
-          padding-bottom: 7px;
-        }
-
 
         /* Main content */
         main {
-          flex: 1 1 auto;
+          flex: 1;
           display: flex;
           flex-direction: column;
-          overflow: visible;
-          min-height: 0;
+          overflow: hidden;
         }
 
         /* Customer info section */
         .customer-section {
-          margin-bottom: 8mm;
-          border-top: 2.5px solid black;
-          padding-top: 3mm;
+          margin-bottom: 20px;
+          border-top: 2px solid black;
+          padding-top: 16px;
+          flex-shrink: 0;
         }
 
         .customer-section h2 {
-          font-size: 14px;
+          font-size: 12px;
           font-weight: bold;
-          margin-bottom: 8px;
-          margin-left: 5px;
+          margin-bottom: 12px;
+          letter-spacing: 1px;
           color: #000000;
         }
 
         .customer-info {
-          font-size: 13px;
-          line-height: 1.6;
+          font-size: 11px;
+          line-height: 1.8;
           color: #000000;
         }
 
         .customer-info-row {
-          padding: 5px;
           display: flex;
         }
 
@@ -212,95 +197,90 @@ export const generateInvoiceHTML = (order: Order): string => {
           color: #000000;
         }
 
-
         /* Items table */
         .items-table {
-          flex: 1 1 auto;
-          overflow: visible;
+          flex: 1;
           display: flex;
           flex-direction: column;
-          min-height: 100px;
+          overflow: hidden;
         }
 
         .table-header {
           display: flex;
-          font-size: ${fontSize === '9px' ? '10px' : fontSize === '10px' ? '11px' : fontSize === '11px' ? '12px' : '14px'};
+          font-size: ${headerFontSize};
           font-weight: bold;
           text-align: center;
-          padding: ${rowPadding === '1px' ? '2px 0' : rowPadding === '2px' ? '3px 0' : '5px 0'};
+          padding: ${headerPadding};
           color: #000000;
+          flex-shrink: 0;
         }
 
         .table-body {
           font-size: ${fontSize};
           text-align: center;
           color: #000000;
-          flex: 1 1 auto;
+          flex: 1;
           display: flex;
           flex-direction: column;
-          min-height: 50px;
+          overflow: hidden;
         }
 
         .table-row {
           display: flex;
-          min-height: ${fontSize === '9px' ? '16px' : fontSize === '10px' ? '18px' : fontSize === '11px' ? '20px' : '25px'};
+          min-height: ${rowMinHeight};
           align-items: center;
           padding: ${rowPadding} 0;
           color: #000000;
           flex-shrink: 0;
         }
-        
-        .table-row:last-child {
-          border-bottom: none;
-        }
 
         .col-product {
           width: 25%;
-          padding: 0 ${fontSize === '9px' || fontSize === '10px' ? '2' : '4'}px;
+          padding: 0 ${colPadding};
           text-align: left;
         }
 
         .col-size {
           width: 20%;
-          padding: 0 ${fontSize === '9px' || fontSize === '10px' ? '2' : '4'}px;
+          padding: 0 ${colPadding};
         }
 
         .col-quantity {
           width: 10%;
-          padding: 0 ${fontSize === '9px' || fontSize === '10px' ? '2' : '4'}px;
+          padding: 0 ${colPadding};
         }
 
         .col-price {
           width: 15%;
-          padding: 0 ${fontSize === '9px' || fontSize === '10px' ? '2' : '4'}px;
+          padding: 0 ${colPadding};
         }
 
         .col-amount {
           width: 15%;
-          padding: 0 ${fontSize === '9px' || fontSize === '10px' ? '2' : '4'}px;
+          padding: 0 ${colPadding};
         }
 
         .col-remarks {
           width: 15%;
-          padding: 0 ${fontSize === '9px' || fontSize === '10px' ? '2' : '4'}px;
+          padding: 0 ${colPadding};
         }
 
         /* Footer */
         footer {
-          margin-top: 20px;
-          padding-top: 5mm;
+          margin-top: auto;
+          padding-top: 0;
           flex-shrink: 0;
         }
 
         /* Final summary */
         .final-summary {
-          border-top: 2.5px solid black;
-          border-bottom: 2.5px solid black;
-          padding: ${fontSize === '9px' || fontSize === '10px' ? '8px 0' : '12px 0'};
+          border-top: 2px solid black;
+          border-bottom: 2px solid black;
+          padding: ${summaryPadding};
           display: flex;
           justify-content: space-between;
           align-items: stretch;
-          min-height: ${fontSize === '9px' || fontSize === '10px' ? '60px' : '80px'};
+          min-height: ${summaryMinHeight};
         }
 
         .notes-ea-container {
@@ -330,16 +310,10 @@ export const generateInvoiceHTML = (order: Order): string => {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin: 0;
-          padding: 0;
           color: #000000;
         }
 
         .price-row.total {
-          margin: 0;
-          padding: 0;
-          /*padding-top: 8px;*/
-          /*border-top: 1px solid #ddd;*/
           font-weight: bold;
         }
 
@@ -349,12 +323,10 @@ export const generateInvoiceHTML = (order: Order): string => {
           color: #000000;
         }
 
-
         /* Page number */
         .page-number {
-          position: absolute;
-          bottom: 10mm;
-          right: 10mm;
+          text-align: center;
+          padding-top: 16px;
           font-size: 12px;
           color: #666;
         }
@@ -388,7 +360,7 @@ export const generateInvoiceHTML = (order: Order): string => {
                   <span class="customer-info-value">${order.phone}</span>
                 </div>
                 <div class="customer-info-row">
-                  <span class="customer-info-label">ADRESS</span>
+                  <span class="customer-info-label">ADDRESS</span>
                   <span class="customer-info-value">${order.address}</span>
                 </div>
               </div>
@@ -444,9 +416,7 @@ export const generateInvoiceHTML = (order: Order): string => {
             </section>
 
             <!-- Page Number -->
-            <div class="page-number">
-              <p>1</p>
-            </div>
+            <div class="page-number">1</div>
           </footer>
         </div>
       </div>
