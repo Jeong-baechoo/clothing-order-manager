@@ -160,17 +160,19 @@ function SortableRow({
                 </select>
             </td>
             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                <select
+                <input
+                    list={`color-list-${index}`}
                     value={item.color || ''}
                     onChange={(e) => handleItemChange(index, 'color', e.target.value)}
                     required
+                    placeholder="색상 선택 또는 입력"
                     className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                >
-                    <option value="">색상 선택</option>
+                />
+                <datalist id={`color-list-${index}`}>
                     {productColors.map(color => (
-                        <option key={color} value={color}>{color}</option>
+                        <option key={color} value={color} />
                     ))}
-                </select>
+                </datalist>
             </td>
             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
                 <input
@@ -867,7 +869,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">사이즈</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">색상</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">의류 단가</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">소형인쇄</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">커스텀인쇄</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">대형인쇄</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">특대형인쇄</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">디자인작업</th>
