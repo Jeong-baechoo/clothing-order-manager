@@ -1,13 +1,43 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Order, OrderItem } from '../../models/orderTypes';
+import { getOrders } from '../../lib/supabase';
 
 interface OrderStatisticsProps {
     orders: Order[];
 }
 
 export default function OrderStatistics({ orders }: OrderStatisticsProps) {
+    const [monthlyRevenue, setMonthlyRevenue] = useState<number>(0);
+    const [monthlyOrderCount, setMonthlyOrderCount] = useState<number>(0);
+
+    // 현재 월의 누적 매출액 계산 (완료 주문 포함)
+    useEffect(() => {
+        async function loadMonthlyRevenue() {
+            try {
+                const now = new Date();
+                const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+                // 완료 주문 포함 전체 주문 가져오기
+                const allOrders = await getOrders(true);
+
+                // 현재 월 주문만 필터링
+                const monthOrders = allOrders.filter(order =>
+                    order.order_date && order.order_date.startsWith(currentMonth)
+                );
+
+                const revenue = monthOrders.reduce((sum: number, order: { total_price: number }) => sum + (order.total_price || 0), 0);
+                setMonthlyRevenue(revenue);
+                setMonthlyOrderCount(monthOrders.length);
+            } catch (error) {
+                console.error('월 매출액 계산 중 오류:', error);
+            }
+        }
+
+        loadMonthlyRevenue();
+    }, [orders]);
+
     // 통계 계산
     const statistics = useMemo(() => {
         const totalOrders = orders.length;
@@ -53,11 +83,8 @@ export default function OrderStatistics({ orders }: OrderStatisticsProps) {
             }
         });
 
-        // 총 매출액
-        const totalRevenue = orders.reduce((sum, order) => sum + order.totalPrice, 0);
-
-        // 평균 주문 금액
-        const avgOrderValue = totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(0) : '0';
+        // 평균 주문 금액 (월 매출 기준)
+        const avgOrderValue = monthlyOrderCount > 0 ? (monthlyRevenue / monthlyOrderCount).toFixed(0) : '0';
 
         return {
             totalOrders,
@@ -70,10 +97,9 @@ export default function OrderStatistics({ orders }: OrderStatisticsProps) {
             totalItems,
             totalQuantity,
             avgItemsPerOrder,
-            totalRevenue,
             avgOrderValue
         };
-    }, [orders]);
+    }, [orders, monthlyRevenue, monthlyOrderCount]);
 
     return (
         <div className="mb-8">
@@ -147,8 +173,8 @@ export default function OrderStatistics({ orders }: OrderStatisticsProps) {
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">총 상품 항목 {statistics.totalItems}개</p>
                     </div>
                     <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">총 매출액</p>
-                        <p className="text-xl font-bold text-green-600 dark:text-green-400">{statistics.totalRevenue.toLocaleString()}원</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">월 매출액</p>
+                        <p className="text-xl font-bold text-green-600 dark:text-green-400">{monthlyRevenue.toLocaleString()}원</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">평균 {parseInt(statistics.avgOrderValue).toLocaleString()}원/주문</p>
                     </div>
                     <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
