@@ -67,22 +67,6 @@ export default function OrderStatistics({ orders }: OrderStatisticsProps) {
         // 평균 주문당 항목 수
         const avgItemsPerOrder = totalOrders > 0 ? (totalItems / totalOrders).toFixed(1) : '0';
 
-        // 가장 많이 주문된 상품
-        const productCounts: Record<string, number> = {};
-        allItems.forEach(item => {
-            productCounts[item.product] = (productCounts[item.product] || 0) + (item.quantity === undefined ? 0 : item.quantity);
-        });
-
-        let mostOrderedProduct = '';
-        let maxCount = 0;
-
-        Object.entries(productCounts).forEach(([product, count]) => {
-            if (count > maxCount) {
-                mostOrderedProduct = product;
-                maxCount = count;
-            }
-        });
-
         // 평균 주문 금액 (월 매출 기준)
         const avgOrderValue = monthlyOrderCount > 0 ? (monthlyRevenue / monthlyOrderCount).toFixed(0) : '0';
 
@@ -92,8 +76,6 @@ export default function OrderStatistics({ orders }: OrderStatisticsProps) {
             processingOrders,
             completedOrders,
             recentOrders,
-            mostOrderedProduct,
-            maxCount,
             totalItems,
             totalQuantity,
             avgItemsPerOrder,
@@ -150,14 +132,12 @@ export default function OrderStatistics({ orders }: OrderStatisticsProps) {
                     <div className="flex items-center">
                         <div className="flex-shrink-0 bg-blue-100 dark:bg-blue-900 rounded-full p-3">
                             <svg className="h-6 w-6 text-blue-600 dark:text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                             </svg>
                         </div>
                         <div className="ml-4">
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">인기 상품</p>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                                {statistics.mostOrderedProduct ? statistics.mostOrderedProduct : '데이터 없음'}
-                            </p>
+                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">월 주문건</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{monthlyOrderCount}건</p>
                         </div>
                     </div>
                 </div>
