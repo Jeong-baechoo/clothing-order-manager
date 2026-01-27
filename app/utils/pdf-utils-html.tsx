@@ -104,7 +104,7 @@ export const generateInvoiceHTML = (order: Order): string => {
           width: 794px;
           height: 1123px;
           padding: 15mm 10mm;
-          background-color: #f9f9f9;
+          background-color: #ffffff;
           position: relative;
           overflow: hidden;
         }
@@ -116,7 +116,7 @@ export const generateInvoiceHTML = (order: Order): string => {
           padding: 45px;
           display: flex;
           flex-direction: column;
-          background-color: #f9f9f9;
+          background-color: #ffffff;
         }
 
         /* Header - 원본과 동일한 음수 마진 구조 */
@@ -296,7 +296,6 @@ export const generateInvoiceHTML = (order: Order): string => {
         .price-summary {
           width: 45%;
           font-size: 12px;
-          background-color: #f5f5f5;
           border-radius: 4px;
           color: #000000;
           display: flex;
