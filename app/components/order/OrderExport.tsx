@@ -86,6 +86,8 @@ export default function OrderExport({ orders }: OrderExportProps) {
         switch (status) {
             case 'pending':
                 return '대기중';
+            case 'paid':
+                return '입금완료';
             case 'processing':
                 return '작업중';
             case 'completed':

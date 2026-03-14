@@ -147,17 +147,19 @@ function SortableRow({
                 />
             </td>
             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                <select
+                <input
+                    list={`size-list-${index}`}
                     value={item.size || ''}
                     onChange={(e) => handleItemChange(index, 'size', e.target.value)}
                     required
+                    placeholder="사이즈 선택 또는 입력"
                     className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                >
-                    <option value="">사이즈 선택</option>
+                />
+                <datalist id={`size-list-${index}`}>
                     {productSizes.map(size => (
-                        <option key={size} value={size}>{size}</option>
+                        <option key={size} value={size} />
                     ))}
-                </select>
+                </datalist>
             </td>
             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
                 <input
@@ -223,26 +225,6 @@ function SortableRow({
                         type="number"
                         value={item.extraLargePrintingPrice || ''}
                         onChange={(e) => handleSafeNumberChange(index, 'extraLargePrintingPrice', e.target.value, 0, 10000000, false)}
-                        min="0"
-                        placeholder="단가"
-                        className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                    />
-                </div>
-            </td>
-            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                <div className="space-y-1">
-                    <input
-                        type="number"
-                        value={item.designWorkQuantity || ''}
-                        onChange={(e) => handleSafeNumberChange(index, 'designWorkQuantity', e.target.value, 0, 9999, true)}
-                        min="0"
-                        placeholder="개수"
-                        className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                    />
-                    <input
-                        type="number"
-                        value={item.designWorkPrice || ''}
-                        onChange={(e) => handleSafeNumberChange(index, 'designWorkPrice', e.target.value, 0, 10000000, false)}
                         min="0"
                         placeholder="단가"
                         className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
@@ -324,7 +306,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         phone: '',
         address: '',
         status: 'pending',
-        paymentMethod: '신용카드',
+        paymentMethod: '계좌이체',
         items: [
             {
                 id: `item-${Date.now()}-1`,
@@ -656,15 +638,11 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                     errors.push(`${itemNum}번 상품의 대형인쇄 수량은 0-9999 사이의 정수여야 합니다.`);
                 }
 
-                // 특대형 인쇄 검증
+                // 개별단가 검증
                 if (item.extraLargePrintingQuantity !== undefined &&
                     item.extraLargePrintingQuantity > 0 &&
                     (!item.extraLargePrintingPrice || item.extraLargePrintingPrice <= 0)) {
-                    errors.push(`${itemNum}번 상품의 특대형인쇄 단가를 입력해주세요.`);
-                }                // 디자인 작업 검증
-                if (item.designWorkQuantity && item.designWorkQuantity > 0 &&
-                    (!item.designWorkPrice || item.designWorkPrice <= 0)) {
-                    errors.push(`${itemNum}번 상품의 디자인작업 단가를 입력해주세요.`);
+                    errors.push(`${itemNum}번 상품의 개별단가를 입력해주세요.`);
                 }
             });
         }
@@ -857,9 +835,9 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                         onDragEnd={handleDragEnd}
                                     >
                                         <div className="overflow-x-auto max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg min-h-96">
-                                            <table className="w-full border-collapse border border-gray-300 dark:border-gray-600" style={{tableLayout: 'fixed', minWidth: '1700px'}}>
+                                            <table className="w-full border-collapse border border-gray-300 dark:border-gray-600" style={{tableLayout: 'fixed', minWidth: '1560px'}}>
                                                 <colgroup>
-                                                <col style={{ width: '50px' }} /><col style={{ width: '200px' }} /><col style={{ width: '80px' }} /><col style={{ width: '100px' }} /><col style={{ width: '100px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '140px' }} /><col style={{ width: '140px' }} /><col style={{ width: '120px' }} /><col style={{ width: '150px' }} /><col style={{ width: '140px' }} />
+                                                <col style={{ width: '50px' }} /><col style={{ width: '200px' }} /><col style={{ width: '80px' }} /><col style={{ width: '100px' }} /><col style={{ width: '100px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '140px' }} /><col style={{ width: '120px' }} /><col style={{ width: '150px' }} /><col style={{ width: '140px' }} />
                                             </colgroup>
                                             <thead className="sticky top-0 bg-gray-100 dark:bg-gray-700 z-10">
                                                 <tr className="bg-gray-100 dark:bg-gray-700">
@@ -871,8 +849,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">의류 단가</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">커스텀인쇄</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">대형인쇄</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">특대형인쇄</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">디자인작업</th>
+                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">개별단가</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">단가</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">총 금액</th>
                                                     <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">비고</th>
@@ -997,13 +974,13 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                         </label>
                                         <select
                                             name="paymentMethod"
-                                            value={orderData.paymentMethod || '신용카드'}
+                                            value={orderData.paymentMethod || '계좌이체'}
                                             onChange={handleChange}
                                             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
                                         >
+                                            <option value="계좌이체">계좌이체</option>
                                             <option value="신용카드">신용카드</option>
                                             <option value="무통장입금">무통장입금</option>
-                                            <option value="계좌이체">계좌이체</option>
                                             <option value="휴대폰결제">휴대폰결제</option>
                                             <option value="카카오페이">카카오페이</option>
                                             <option value="네이버페이">네이버페이</option>
@@ -1020,6 +997,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
                                         >
                                             <option value="pending">대기중</option>
+                                            <option value="paid">입금완료</option>
                                             <option value="processing">작업중</option>
                                             <option value="completed">완료</option>
                                         </select>

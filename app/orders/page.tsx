@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import OrderDetailView from '../components/order/OrderDetailView';
-import OrderStatistics from '../components/order/OrderStatistics';
+
 import OrderExport from '../components/order/OrderExport';
 import OrderMemo from '../components/order/OrderMemo';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
@@ -424,8 +424,6 @@ const OrdersPage: React.FC = () => {
                 </button>
             </div>
 
-            <OrderStatistics orders={orders} />
-
             {isFormVisible && (
                 <OrderFormModal
                     onSubmit={isEditMode ? handleEditOrder : handleAddOrder}
@@ -460,6 +458,7 @@ const OrdersPage: React.FC = () => {
                         >
                             <option value="all">모든 상태</option>
                             <option value="pending">대기중</option>
+                            <option value="paid">입금완료</option>
                             <option value="processing">작업중</option>
                             {showCompleted && <option value="completed">완료</option>}
                         </select>
@@ -587,6 +586,7 @@ const OrdersPage: React.FC = () => {
                                                     className="text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md"
                                                 >
                                                     <option value="pending">대기중</option>
+                                                    <option value="paid">입금완료</option>
                                                     <option value="processing">작업중</option>
                                                     <option value="completed">완료</option>
                                                 </select>

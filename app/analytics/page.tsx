@@ -65,7 +65,12 @@ const CustomTooltip = ({ active, payload, label }: {
     return null;
 };
 
+const ANALYTICS_PASSWORD = '1234';
+
 export default function AnalyticsPage() {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [passwordInput, setPasswordInput] = useState('');
+    const [passwordError, setPasswordError] = useState(false);
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedMonth, setSelectedMonth] = useState<string>('all');
@@ -262,6 +267,58 @@ export default function AnalyticsPage() {
             calculateAnalytics();
         }
     }, [calculateAnalytics, loading]);
+
+    const handlePasswordSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (passwordInput === ANALYTICS_PASSWORD) {
+            setIsAuthenticated(true);
+            setPasswordError(false);
+        } else {
+            setPasswordError(true);
+        }
+    };
+
+    if (!isAuthenticated) {
+        return (
+            <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-center min-h-[60vh]">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 w-full max-w-sm">
+                        <div className="text-center mb-6">
+                            <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg className="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            </div>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">매출 분석</h2>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">비밀번호를 입력해주세요</p>
+                        </div>
+                        <form onSubmit={handlePasswordSubmit}>
+                            <input
+                                type="password"
+                                value={passwordInput}
+                                onChange={(e) => {
+                                    setPasswordInput(e.target.value);
+                                    setPasswordError(false);
+                                }}
+                                placeholder="비밀번호"
+                                className={`w-full px-4 py-3 border ${passwordError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} dark:bg-gray-700 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent mb-3`}
+                                autoFocus
+                            />
+                            {passwordError && (
+                                <p className="text-red-500 text-sm mb-3">비밀번호가 올바르지 않습니다.</p>
+                            )}
+                            <button
+                                type="submit"
+                                className="w-full px-4 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors font-medium"
+                            >
+                                확인
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (loading) {
         return (
