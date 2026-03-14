@@ -740,9 +740,9 @@ export default function CompaniesPage() {
           {allProductsLoading ? (
             <p className="text-center text-gray-500 dark:text-gray-300 py-4">데이터를 불러오는 중...</p>
           ) : filteredAllProducts.length > 0 ? (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[calc(100vh-500px)] overflow-y-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">제품명</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">회사</th>
