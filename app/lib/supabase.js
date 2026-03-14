@@ -378,7 +378,13 @@ export async function getCompanies() {
           name,
           default_price,
           wholesale_price,
-          company_id
+          company_id,
+          category_id,
+          categories (
+            id,
+            name,
+            sort_order
+          )
         )
       `)
       .order('name');
@@ -460,7 +466,8 @@ export async function addProduct(product) {
       name: product.name,
       default_price: product.defaultPrice,
       wholesale_price: product.wholesalePrice || 0,
-      company_id: product.companyId
+      company_id: product.companyId,
+      category_id: product.categoryId || null
     })
     .select()
     .single();
@@ -485,6 +492,9 @@ export async function updateProduct(productId, productData) {
   if (productData.wholesalePrice !== undefined) {
     updateData.wholesale_price = productData.wholesalePrice;
   }
+  if (productData.categoryId !== undefined) {
+    updateData.category_id = productData.categoryId;
+  }
 
   const { error } = await supabase
     .from('products')
@@ -507,6 +517,72 @@ export async function deleteProduct(productId) {
 
   if (error) {
     console.error('제품 삭제 오류:', error);
+    return false;
+  }
+
+  return true;
+}
+
+// 카테고리 관련 함수들
+export async function getCategories() {
+  try {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('sort_order');
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('카테고리 목록 조회 실패:', error);
+    return [];
+  }
+}
+
+export async function addCategory(category) {
+  const { data, error } = await supabase
+    .from('categories')
+    .insert({
+      name: category.name,
+      sort_order: category.sortOrder || 0
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('카테고리 추가 오류:', error);
+    return null;
+  }
+
+  return data;
+}
+
+export async function updateCategory(categoryId, categoryData) {
+  const updateData = {};
+  if (categoryData.name !== undefined) updateData.name = categoryData.name;
+  if (categoryData.sortOrder !== undefined) updateData.sort_order = categoryData.sortOrder;
+
+  const { error } = await supabase
+    .from('categories')
+    .update(updateData)
+    .eq('id', categoryId);
+
+  if (error) {
+    console.error('카테고리 업데이트 오류:', error);
+    return false;
+  }
+
+  return true;
+}
+
+export async function deleteCategory(categoryId) {
+  const { error } = await supabase
+    .from('categories')
+    .delete()
+    .eq('id', categoryId);
+
+  if (error) {
+    console.error('카테고리 삭제 오류:', error);
     return false;
   }
 
@@ -571,8 +647,14 @@ export async function getProducts(companyId = null) {
         default_price,
         wholesale_price,
         company_id,
+        category_id,
         companies (
           name
+        ),
+        categories (
+          id,
+          name,
+          sort_order
         )
       `)
       .order('name');

@@ -1,19 +1,28 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getCompanies } from '../../lib/supabase';
+import { getCompanies, getCategories } from '../../lib/supabase';
 
 interface Product {
     id: string;
     name: string;
     default_price: number;
     company_id: string;
+    category_id?: number;
     companies?: { name: string };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    categories?: any;
 }
 
 interface Company {
     id: string;
     name: string;
+}
+
+interface Category {
+    id: number;
+    name: string;
+    sort_order: number;
 }
 
 interface ProductSelectionModalProps {
@@ -25,9 +34,12 @@ interface ProductSelectionModalProps {
 export default function ProductSelectionModal({ isOpen, onClose, onSelect }: ProductSelectionModalProps) {
     const [products, setProducts] = useState<Product[]>([]);
     const [companies, setCompanies] = useState<Company[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
     const [selectedCompany, setSelectedCompany] = useState<string>('');
+    const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
-    const [loading, setLoading] = useState(false);    // 컴포넌트 마운트 시 데이터 로드
+    const [loading, setLoading] = useState(false);
+
     useEffect(() => {
         if (isOpen) {
             loadData();
@@ -37,12 +49,11 @@ export default function ProductSelectionModal({ isOpen, onClose, onSelect }: Pro
     const loadData = async () => {
         setLoading(true);
         try {
-            // 회사 목록 로드
-            const companiesResult = await getCompanies();
+            const [companiesResult, categoriesResult] = await Promise.all([getCompanies(), getCategories()]);
+
             if (Array.isArray(companiesResult)) {
                 setCompanies(companiesResult);
 
-                // 회사에서 제품 목록 추출하고 회사 정보 추가
                 const allProducts: Product[] = [];
                 companiesResult.forEach(company => {
                     if (company.products && Array.isArray(company.products)) {
@@ -56,6 +67,10 @@ export default function ProductSelectionModal({ isOpen, onClose, onSelect }: Pro
                 });
                 setProducts(allProducts);
             }
+
+            if (Array.isArray(categoriesResult)) {
+                setCategories(categoriesResult);
+            }
         } catch (error) {
             console.error('데이터 로드 실패:', error);
         } finally {
@@ -63,11 +78,12 @@ export default function ProductSelectionModal({ isOpen, onClose, onSelect }: Pro
         }
     };
 
-    // 필터링된 상품 목록
     const filteredProducts = products.filter(product => {
         const matchesCompany = !selectedCompany || product.company_id === selectedCompany;
+        const matchesCategory = !selectedCategory ||
+            (selectedCategory === 'none' ? !product.category_id : product.category_id?.toString() === selectedCategory);
         const matchesSearch = !searchTerm || product.name.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesCompany && matchesSearch;
+        return matchesCompany && matchesCategory && matchesSearch;
     });
 
     const handleProductSelect = (product: Product) => {
@@ -100,7 +116,7 @@ export default function ProductSelectionModal({ isOpen, onClose, onSelect }: Pro
 
                 {/* 필터 및 검색 */}
                 <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 회사 필터
@@ -114,6 +130,24 @@ export default function ProductSelectionModal({ isOpen, onClose, onSelect }: Pro
                                 {companies.map(company => (
                                     <option key={company.id} value={company.id}>
                                         {company.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                카테고리 필터
+                            </label>
+                            <select
+                                value={selectedCategory}
+                                onChange={(e) => setSelectedCategory(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            >
+                                <option value="">전체 카테고리</option>
+                                <option value="none">미지정</option>
+                                {categories.map(cat => (
+                                    <option key={cat.id} value={cat.id}>
+                                        {cat.name}
                                     </option>
                                 ))}
                             </select>
@@ -164,9 +198,20 @@ export default function ProductSelectionModal({ isOpen, onClose, onSelect }: Pro
                                             {product.default_price?.toLocaleString()}원
                                         </span>
                                     </div>
-                                    <p className="text-gray-500 dark:text-gray-400 text-xs">
-                                        {product.companies?.name || '회사명 없음'}
-                                    </p>
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-gray-500 dark:text-gray-400 text-xs">
+                                            {product.companies?.name || '회사명 없음'}
+                                        </p>
+                                        {(() => {
+                                            const cat = product.categories;
+                                            const catObj = Array.isArray(cat) ? cat[0] : cat;
+                                            return catObj?.name ? (
+                                                <span className="text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded">
+                                                    {catObj.name}
+                                                </span>
+                                            ) : null;
+                                        })()}
+                                    </div>
                                 </div>
                             ))}
                         </div>

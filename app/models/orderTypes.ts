@@ -9,12 +9,21 @@ export interface Company {
     products: Product[];
 }
 
+// 카테고리 타입 정의
+export interface Category {
+    id: number;
+    name: string;
+    sort_order: number;
+}
+
 // 제품 타입 정의
 export interface Product {
     id: string;
     name: string;
     defaultPrice: number;
     wholesalePrice?: number;
+    categoryId?: number;
+    category?: Category;
 }
 
 // 제품 정보 (데이터베이스 정규화용)
