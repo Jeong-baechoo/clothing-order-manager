@@ -38,6 +38,73 @@ export interface ProductInfo {
 }
 
 // =============================================================================
+// PRINTING TYPES & PRICING MATRIX
+// =============================================================================
+
+// 프린팅 옵션 타입
+export type PrintingOption = 'dtf' | 'reflective_dtf' | 'remover' | 'individual';
+
+// 프린팅 옵션 한글 표시
+export const printingOptionMap: Record<PrintingOption, string> = {
+    dtf: '일반 DTF',
+    reflective_dtf: '반사 DTF',
+    remover: '리무버',
+    individual: '개별작업',
+};
+
+// 인쇄 사이즈 타입
+export type PrintSize = 'small' | 'medium' | 'large' | 'extraLarge';
+
+// 수량 구간 타입 (1~9, 10~29, 30~49, 50+)
+export type QuantityTier = '1-9' | '10-29' | '30-49' | '50+';
+
+// 수량으로 구간 결정
+export const getQuantityTier = (quantity: number): QuantityTier => {
+    if (quantity >= 50) return '50+';
+    if (quantity >= 30) return '30-49';
+    if (quantity >= 10) return '10-29';
+    return '1-9';
+};
+
+// 가격 매트릭스: [프린팅옵션][수량구간][사이즈] = 단가
+export const PRINTING_PRICE_MATRIX: Record<PrintingOption, Record<QuantityTier, Record<PrintSize, number>>> = {
+    dtf: {
+        '1-9':  { small: 2000, medium: 3500, large: 5000, extraLarge: 6000 },
+        '10-29': { small: 1800, medium: 3200, large: 4500, extraLarge: 5500 },
+        '30-49': { small: 1500, medium: 3000, large: 4000, extraLarge: 5000 },
+        '50+':  { small: 1300, medium: 2700, large: 3500, extraLarge: 4500 },
+    },
+    reflective_dtf: {
+        '1-9':  { small: 3500, medium: 5500, large: 7500, extraLarge: 9000 },
+        '10-29': { small: 3200, medium: 5000, large: 6800, extraLarge: 8500 },
+        '30-49': { small: 3000, medium: 4500, large: 6000, extraLarge: 8000 },
+        '50+':  { small: 2700, medium: 4000, large: 5500, extraLarge: 7500 },
+    },
+    remover: {
+        '1-9':  { small: 6000, medium: 10000, large: 14000, extraLarge: 18000 },
+        '10-29': { small: 6000, medium: 10000, large: 14000, extraLarge: 18000 },
+        '30-49': { small: 6000, medium: 10000, large: 14000, extraLarge: 18000 },
+        '50+':  { small: 6000, medium: 10000, large: 14000, extraLarge: 18000 },
+    },
+    individual: {
+        '1-9':  { small: 3000, medium: 4500, large: 6500, extraLarge: 8000 },
+        '10-29': { small: 2700, medium: 4200, large: 6000, extraLarge: 7500 },
+        '30-49': { small: 2500, medium: 4000, large: 5500, extraLarge: 7000 },
+        '50+':  { small: 2300, medium: 3700, large: 5000, extraLarge: 6500 },
+    },
+};
+
+// 프린팅 단가 조회
+export const getPrintingUnitPrice = (
+    option: PrintingOption,
+    size: PrintSize,
+    quantity: number
+): number => {
+    const tier = getQuantityTier(quantity);
+    return PRINTING_PRICE_MATRIX[option][tier][size];
+};
+
+// =============================================================================
 // ORDER TYPES
 // =============================================================================
 
@@ -56,12 +123,19 @@ export interface OrderItem {
     size: string;
     color: string;
     price: number;
+    // 기존 프린팅 필드 (레거시 호환)
     smallPrintingQuantity?: number;
     largePrintingQuantity?: number;
     extraLargePrintingQuantity?: number;
     extraLargePrintingPrice?: number;
     designWorkQuantity?: number;
     designWorkPrice?: number;
+    // 새 프린팅 필드
+    printingOption?: PrintingOption | null;
+    smallPrintCount?: number;
+    mediumPrintCount?: number;
+    largePrintCount?: number;
+    extraLargePrintCount?: number;
     productInfo?: ProductInfo; // 정규화된 제품 정보
     remarks?: string; // 비고 필드 추가
 }

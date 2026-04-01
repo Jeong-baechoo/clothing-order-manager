@@ -31,7 +31,12 @@ interface SupabaseOrderItem {
     extra_large_printing_price?: number;
     design_work_quantity?: number;
     design_work_price?: number;
-    remarks?: string; // 비고 필드 추가
+    printing_option?: string | null;
+    small_print_count?: number;
+    medium_print_count?: number;
+    large_print_count?: number;
+    extra_large_print_count?: number;
+    remarks?: string;
 }
 
 // 에러 객체의 타입 정의
@@ -94,11 +99,16 @@ const OrdersPage: React.FC = () => {
                             extraLargePrintingPrice: item.extra_large_printing_price || 0,
                             designWorkQuantity: item.design_work_quantity || 0,
                             designWorkPrice: item.design_work_price || 0,
-                            remarks: item.remarks || '-', // 비고 필드 추가
-                            productInfo: item.product?.id ? item.product : undefined // 제품 정보 저장
+                            printingOption: item.printing_option || null,
+                            smallPrintCount: item.small_print_count || 0,
+                            mediumPrintCount: item.medium_print_count || 0,
+                            largePrintCount: item.large_print_count || 0,
+                            extraLargePrintCount: item.extra_large_print_count || 0,
+                            remarks: item.remarks || '-',
+                            productInfo: item.product?.id ? item.product : undefined
                         }))
                     }));
-                    console.log('첫 번째 변환된 주문:', formattedOrders[0]); // 디버깅용 로그
+                    console.log('첫 번째 변환된 주문:', formattedOrders[0]);
                     setOrders(formattedOrders);
                 } else {
                     // 데이터가 없으면 초기 데이터로 설정하고 Supabase에 저장
@@ -195,6 +205,11 @@ const OrdersPage: React.FC = () => {
                         extraLargePrintingPrice: item.extra_large_printing_price || 0,
                         designWorkQuantity: item.design_work_quantity || 0,
                         designWorkPrice: item.design_work_price || 0,
+                        printingOption: item.printing_option || null,
+                        smallPrintCount: item.small_print_count || 0,
+                        mediumPrintCount: item.medium_print_count || 0,
+                        largePrintCount: item.large_print_count || 0,
+                        extraLargePrintCount: item.extra_large_print_count || 0,
                         remarks: item.remarks || '-',
                         productInfo: item.product?.id ? item.product : undefined
                     }))
@@ -265,6 +280,11 @@ const OrdersPage: React.FC = () => {
                         extraLargePrintingPrice: item.extra_large_printing_price || 0,
                         designWorkQuantity: item.design_work_quantity || 0,
                         designWorkPrice: item.design_work_price || 0,
+                        printingOption: item.printing_option || null,
+                        smallPrintCount: item.small_print_count || 0,
+                        mediumPrintCount: item.medium_print_count || 0,
+                        largePrintCount: item.large_print_count || 0,
+                        extraLargePrintCount: item.extra_large_print_count || 0,
                         remarks: item.remarks || '-',
                         productInfo: item.product?.id ? item.product : undefined
                     }))

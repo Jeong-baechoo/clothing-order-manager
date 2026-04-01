@@ -127,7 +127,7 @@ export async function addOrder(order) {
         .filter(item => item.product !== '배송비')  // 배송비 항목 제외
         .map(item => ({
           order_id: orderData.id,
-          product_id: item.productId || item.product, // 정규화된 product_id 사용
+          product_id: item.productId || item.product,
           quantity: item.quantity || 0,
           size: item.size || '',
           color: item.color || '',
@@ -138,6 +138,11 @@ export async function addOrder(order) {
           extra_large_printing_price: item.extraLargePrintingPrice || 0,
           design_work_quantity: item.designWorkQuantity || 0,
           design_work_price: item.designWorkPrice || 0,
+          printing_option: item.printingOption || null,
+          small_print_count: item.smallPrintCount || 0,
+          medium_print_count: item.mediumPrintCount || 0,
+          large_print_count: item.largePrintCount || 0,
+          extra_large_print_count: item.extraLargePrintCount || 0,
           remarks: item.remarks || '-'
         }));
 
@@ -238,7 +243,7 @@ export async function updateOrder(order) {
           .filter(item => item.product !== '배송비')  // 배송비 항목 제외
           .map(item => ({
             order_id: order.id,
-            product_id: item.productId || item.product, // 정규화된 product_id 사용
+            product_id: item.productId || item.product,
             quantity: item.quantity || 0,
             size: item.size || '',
             color: item.color || '',
@@ -249,6 +254,11 @@ export async function updateOrder(order) {
             extra_large_printing_price: item.extraLargePrintingPrice || 0,
             design_work_quantity: item.designWorkQuantity || 0,
             design_work_price: item.designWorkPrice || 0,
+            printing_option: item.printingOption || null,
+            small_print_count: item.smallPrintCount || 0,
+            medium_print_count: item.mediumPrintCount || 0,
+            large_print_count: item.largePrintCount || 0,
+            extra_large_print_count: item.extraLargePrintCount || 0,
             remarks: item.remarks || '-'
           }));
 

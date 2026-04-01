@@ -389,7 +389,7 @@ export const generateInvoiceHTML = (order: Order): string => {
             <section class="final-summary">
               <div class="notes-ea-container">
                 <div class="price-row" style="justify-content: flex-end;">
-                  <div style="font-size: 11px; color: #333;">
+                  <div style="font-size: 11px; color: #333; font-weight: bold;">
                     • 계산서 미발행시 토탈 금액으로 입금
                   </div>
                 </div>

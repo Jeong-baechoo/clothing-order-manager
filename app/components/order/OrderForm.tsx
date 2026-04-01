@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Order, OrderItem } from '../../models/orderTypes';
+import { Order, OrderItem, PrintingOption, printingOptionMap, getPrintingUnitPrice, getQuantityTier } from '../../models/orderTypes';
 import ProductSelectionModal from './ProductSelectionModal';
 import { calculateUnitPrice, calculateItemTotal, calculateTotalPrice } from '../../utils/order-calculations';
 import {
@@ -44,8 +44,9 @@ interface SortableRowProps {
     handleMoveItemUp: (index: number) => void;
     handleMoveItemDown: (index: number) => void;
     openProductSelection: (index: number) => void;
-    calculateUnitPrice: (item: OrderItem) => number;
-    calculateItemTotal: (item: OrderItem) => number;
+    calculateUnitPrice: (item: OrderItem, totalQuantity?: number) => number;
+    calculateItemTotal: (item: OrderItem, totalQuantity?: number) => number;
+    totalQuantity: number;
     highlightedItems: Set<string>;
     orderItemsLength: number;
     productSizes: string[];
@@ -64,6 +65,7 @@ function SortableRow({
     openProductSelection,
     calculateUnitPrice,
     calculateItemTotal,
+    totalQuantity,
     highlightedItems,
     orderItemsLength,
     productSizes,
@@ -189,53 +191,125 @@ function SortableRow({
                     className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
                 />
             </td>
-            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                <input
-                    type="number"
-                    value={item.smallPrintingQuantity || ''}
-                    onChange={(e) => handleSafeNumberChange(index, 'smallPrintingQuantity', e.target.value, 0, 9999, true)}
-                    min="0"
-                    placeholder="개수"
-                    className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                />
-                <div className="text-xs text-gray-500 mt-1">1,500원/개</div>
-            </td>
-            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                <input
-                    type="number"
-                    value={item.largePrintingQuantity || ''}
-                    onChange={(e) => handleSafeNumberChange(index, 'largePrintingQuantity', e.target.value, 0, 9999, true)}
-                    min="0"
-                    placeholder="개수"
-                    className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                />
-                <div className="text-xs text-gray-500 mt-1">3,000원/개</div>
-            </td>
-            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                <div className="space-y-1">
-                    <input
-                        type="number"
-                        value={item.extraLargePrintingQuantity || ''}
-                        onChange={(e) => handleSafeNumberChange(index, 'extraLargePrintingQuantity', e.target.value, 0, 9999, true)}
-                        min="0"
-                        placeholder="개수"
-                        className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                    />
-                    <input
-                        type="number"
-                        value={item.extraLargePrintingPrice || ''}
-                        onChange={(e) => handleSafeNumberChange(index, 'extraLargePrintingPrice', e.target.value, 0, 10000000, false)}
-                        min="0"
-                        placeholder="단가"
-                        className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                    />
-                </div>
-            </td>
+            {item.printingOption !== undefined ? (
+                <>
+                    <td className="border border-gray-300 dark:border-gray-600 px-2 py-2">
+                        <select
+                            value={item.printingOption || ''}
+                            onChange={(e) => handleItemChange(index, 'printingOption', e.target.value || '')}
+                            className="w-full px-1 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-xs focus:ring-1 focus:ring-blue-500"
+                        >
+                            <option value="">없음</option>
+                            {(Object.entries(printingOptionMap) as [PrintingOption, string][]).map(([key, label]) => (
+                                <option key={key} value={key}>{label}</option>
+                            ))}
+                        </select>
+                        {item.printingOption && (
+                            <div className="text-xs text-gray-500 mt-1">
+                                {getQuantityTier(totalQuantity)}장 구간
+                            </div>
+                        )}
+                    </td>
+                    {(['smallPrintCount', 'mediumPrintCount', 'largePrintCount', 'extraLargePrintCount'] as const).map((field, i) => {
+                        const sizeMap: Record<string, 'small' | 'medium' | 'large' | 'extraLarge'> = {
+                            smallPrintCount: 'small',
+                            mediumPrintCount: 'medium',
+                            largePrintCount: 'large',
+                            extraLargePrintCount: 'extraLarge',
+                        };
+                        const unitPrice = item.printingOption ? getPrintingUnitPrice(item.printingOption, sizeMap[field], totalQuantity) : 0;
+                        return (
+                            <td key={i} className="border border-gray-300 dark:border-gray-600 px-1 py-2">
+                                <input
+                                    type="number"
+                                    value={item[field] || ''}
+                                    onChange={(e) => handleSafeNumberChange(index, field, e.target.value, 0, 99, true)}
+                                    min="0"
+                                    max="99"
+                                    placeholder="0"
+                                    disabled={!item.printingOption}
+                                    className="w-full px-1 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-xs focus:ring-1 focus:ring-blue-500 text-center disabled:opacity-40"
+                                />
+                                {item.printingOption && (item[field] ?? 0) > 0 && (
+                                    <div className="text-xs text-gray-500 mt-1 text-center">
+                                        {unitPrice.toLocaleString()}원
+                                    </div>
+                                )}
+                            </td>
+                        );
+                    })}
+                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                        <div className="space-y-1">
+                            <input
+                                type="number"
+                                value={item.extraLargePrintingQuantity || ''}
+                                onChange={(e) => handleSafeNumberChange(index, 'extraLargePrintingQuantity', e.target.value, 0, 9999, true)}
+                                min="0"
+                                placeholder="개수"
+                                className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-xs focus:ring-1 focus:ring-blue-500"
+                            />
+                            <input
+                                type="number"
+                                value={item.extraLargePrintingPrice || ''}
+                                onChange={(e) => handleSafeNumberChange(index, 'extraLargePrintingPrice', e.target.value, 0, 10000000, false)}
+                                min="0"
+                                placeholder="단가"
+                                className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-xs focus:ring-1 focus:ring-blue-500"
+                            />
+                        </div>
+                    </td>
+                </>
+            ) : (
+                <>
+                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                        <input
+                            type="number"
+                            value={item.smallPrintingQuantity || ''}
+                            onChange={(e) => handleSafeNumberChange(index, 'smallPrintingQuantity', e.target.value, 0, 9999, true)}
+                            min="0"
+                            placeholder="개수"
+                            className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
+                        />
+                        <div className="text-xs text-gray-500 mt-1">1,500원/개</div>
+                    </td>
+                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                        <input
+                            type="number"
+                            value={item.largePrintingQuantity || ''}
+                            onChange={(e) => handleSafeNumberChange(index, 'largePrintingQuantity', e.target.value, 0, 9999, true)}
+                            min="0"
+                            placeholder="개수"
+                            className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
+                        />
+                        <div className="text-xs text-gray-500 mt-1">3,000원/개</div>
+                    </td>
+                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                        <div className="space-y-1">
+                            <input
+                                type="number"
+                                value={item.extraLargePrintingQuantity || ''}
+                                onChange={(e) => handleSafeNumberChange(index, 'extraLargePrintingQuantity', e.target.value, 0, 9999, true)}
+                                min="0"
+                                placeholder="개수"
+                                className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
+                            />
+                            <input
+                                type="number"
+                                value={item.extraLargePrintingPrice || ''}
+                                onChange={(e) => handleSafeNumberChange(index, 'extraLargePrintingPrice', e.target.value, 0, 10000000, false)}
+                                min="0"
+                                placeholder="단가"
+                                className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
+                            />
+                        </div>
+                    </td>
+                </>
+            )}
             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right font-semibold text-green-600">
-                {calculateUnitPrice(item).toLocaleString()}원
+                {calculateUnitPrice(item, totalQuantity).toLocaleString()}원
             </td>
             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right font-semibold text-blue-600">
-                {calculateItemTotal(item).toLocaleString()}원
+                {calculateItemTotal(item, totalQuantity).toLocaleString()}원
             </td>
             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
                 <input
@@ -311,22 +385,23 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
             {
                 id: `item-${Date.now()}-1`,
                 product: '',
-                productId: '', // 정규화된 product_id 필드 추가
+                productId: '',
                 quantity: 1,
                 size: '',
                 color: '',
                 price: 0,
-                smallPrintingQuantity: 0,
-                largePrintingQuantity: 0,
+                printingOption: null,
+                smallPrintCount: 0,
+                mediumPrintCount: 0,
+                largePrintCount: 0,
+                extraLargePrintCount: 0,
                 extraLargePrintingQuantity: 0,
                 extraLargePrintingPrice: 0,
-                designWorkQuantity: 0,
-                designWorkPrice: 0,
-                remarks: '-' // 비고 기본값 추가
+                remarks: '-'
             }
         ]
     });
-    
+
     const [shippingFee, setShippingFee] = useState<number>(3500); // 배송비 별도 관리
     const [autoShipping, setAutoShipping] = useState<boolean>(true); // 배송비 자동 계산 여부
 
@@ -362,7 +437,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
 
                 if (oldIndex !== -1 && newIndex !== -1 && prev.items) {
                     const newItems = arrayMove(prev.items, oldIndex, newIndex);
-                    
+
                     // 이동한 항목에 하이라이트 효과 추가
                     const movedItem = newItems[newIndex];
                     if (movedItem.id) {
@@ -385,7 +460,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
             // 배송비 항목 찾기
             const shippingItem = initialData.items?.find(item => item.product === '배송비');
             const regularItems = initialData.items?.filter(item => item.product !== '배송비') || [];
-            
+
             setOrderData({
                 ...initialData,
                 items: regularItems.map((item, index) => ({
@@ -393,7 +468,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                     id: item.id || `item-temp-${Date.now()}-${index + 1}`
                 }))
             });
-            
+
             // 배송비 설정
             if (shippingItem) {
                 setShippingFee(shippingItem.price || 0);
@@ -437,7 +512,15 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
 
     // 상품 항목 추가 핸들러
     const handleAddItem = useCallback(() => {
-        const newItem: OrderItem = {
+        // 기존 주문 수정 시 레거시 방식 유지
+        const firstItem = orderData.items?.[0];
+        const useLegacy = firstItem && !firstItem.printingOption && (
+            (firstItem.smallPrintingQuantity ?? 0) > 0 ||
+            (firstItem.largePrintingQuantity ?? 0) > 0 ||
+            (firstItem.extraLargePrintingQuantity ?? 0) > 0
+        );
+
+        const newItem: OrderItem = useLegacy ? {
             id: `item-${Date.now()}-${(orderData.items?.length || 0) + 1}`,
             product: '',
             quantity: 1,
@@ -450,7 +533,22 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
             extraLargePrintingPrice: 0,
             designWorkQuantity: 0,
             designWorkPrice: 0,
-            remarks: '-' // 비고 기본값 추가
+            remarks: '-'
+        } : {
+            id: `item-${Date.now()}-${(orderData.items?.length || 0) + 1}`,
+            product: '',
+            quantity: 1,
+            size: '',
+            color: '',
+            price: 0,
+            printingOption: null,
+            smallPrintCount: 0,
+            mediumPrintCount: 0,
+            largePrintCount: 0,
+            extraLargePrintCount: 0,
+            extraLargePrintingQuantity: 0,
+            extraLargePrintingPrice: 0,
+            remarks: '-'
         };
 
         setOrderData(prev => ({
@@ -458,7 +556,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
             items: [...(prev.items || []), newItem]
         }));
     }, [orderData.items?.length]);
-    
+
     // 배송비 추가 핸들러 제거 (더 이상 필요 없음)
 
     // 상품 항목 제거 핸들러
@@ -507,12 +605,12 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
             const movingItem = newItems[index];
             // 현재 항목과 위 항목을 교환
             [newItems[index - 1], newItems[index]] = [newItems[index], newItems[index - 1]];
-            
+
             // 이동한 항목에 하이라이트 효과 추가
             if (movingItem.id) {
                 addHighlight(movingItem.id);
             }
-            
+
             return {
                 ...prev,
                 items: newItems
@@ -530,12 +628,12 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
             const movingItem = newItems[index];
             // 현재 항목과 아래 항목을 교환
             [newItems[index], newItems[index + 1]] = [newItems[index + 1], newItems[index]];
-            
+
             // 이동한 항목에 하이라이트 효과 추가
             if (movingItem.id) {
                 addHighlight(movingItem.id);
             }
-            
+
             return {
                 ...prev,
                 items: newItems
@@ -548,7 +646,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         const items = orderData.items?.filter(item => item.product !== '배송비') || [];
         return calculateTotalPrice(items);
     }, [orderData.items]);
-    
+
     // 배송비 자동 계산 (상품 금액이 100,000원 미만일 때)
     useEffect(() => {
         if (autoShipping) {
@@ -592,7 +690,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         } else {
             orderData.items.forEach((item, index) => {
                 const itemNum = index + 1;
-                
+
                 // 배송비는 더 이상 주문 항목으로 처리하지 않음
 
                 // 필수 필드 검증
@@ -623,26 +721,37 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                     errors.push(`${itemNum}번 상품의 단가는 1-10,000,000원 사이여야 합니다.`);
                 }
 
-                // 인쇄 수량 검증
-                if (item.smallPrintingQuantity !== undefined &&
-                    (!Number.isInteger(item.smallPrintingQuantity) ||
-                        item.smallPrintingQuantity < 0 ||
-                        item.smallPrintingQuantity > 9999)) {
-                    errors.push(`${itemNum}번 상품의 소형인쇄 수량은 0-9999 사이의 정수여야 합니다.`);
-                }
+                // 인쇄 검증 (새/구 방식 분기)
+                if (item.printingOption) {
+                    // 새 프린팅 방식 검증
+                    const printCounts = [item.smallPrintCount, item.mediumPrintCount, item.largePrintCount, item.extraLargePrintCount];
+                    for (const count of printCounts) {
+                        if (count !== undefined && (!Number.isInteger(count) || count < 0 || count > 99)) {
+                            errors.push(`${itemNum}번 상품의 인쇄 개수는 0-99 사이의 정수여야 합니다.`);
+                            break;
+                        }
+                    }
+                } else {
+                    // 레거시 방식 검증
+                    if (item.smallPrintingQuantity !== undefined &&
+                        (!Number.isInteger(item.smallPrintingQuantity) ||
+                            item.smallPrintingQuantity < 0 ||
+                            item.smallPrintingQuantity > 9999)) {
+                        errors.push(`${itemNum}번 상품의 소형인쇄 수량은 0-9999 사이의 정수여야 합니다.`);
+                    }
 
-                if (item.largePrintingQuantity !== undefined &&
-                    (!Number.isInteger(item.largePrintingQuantity) ||
-                        item.largePrintingQuantity < 0 ||
-                        item.largePrintingQuantity > 9999)) {
-                    errors.push(`${itemNum}번 상품의 대형인쇄 수량은 0-9999 사이의 정수여야 합니다.`);
-                }
+                    if (item.largePrintingQuantity !== undefined &&
+                        (!Number.isInteger(item.largePrintingQuantity) ||
+                            item.largePrintingQuantity < 0 ||
+                            item.largePrintingQuantity > 9999)) {
+                        errors.push(`${itemNum}번 상품의 대형인쇄 수량은 0-9999 사이의 정수여야 합니다.`);
+                    }
 
-                // 개별단가 검증
-                if (item.extraLargePrintingQuantity !== undefined &&
-                    item.extraLargePrintingQuantity > 0 &&
-                    (!item.extraLargePrintingPrice || item.extraLargePrintingPrice <= 0)) {
-                    errors.push(`${itemNum}번 상품의 개별단가를 입력해주세요.`);
+                    if (item.extraLargePrintingQuantity !== undefined &&
+                        item.extraLargePrintingQuantity > 0 &&
+                        (!item.extraLargePrintingPrice || item.extraLargePrintingPrice <= 0)) {
+                        errors.push(`${itemNum}번 상품의 개별단가를 입력해주세요.`);
+                    }
                 }
             });
         }
@@ -668,11 +777,22 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         max: number = 9999,
         isInteger: boolean = true
     ) => {
+        // 빈 값이면 0으로 설정 (입력 중 지울 수 있도록)
+        if (value === '' || value === '-') {
+            setOrderData(prev => ({
+                ...prev,
+                items: prev.items?.map((item, i) =>
+                    i === index ? { ...item, [field]: 0 } : item
+                ) || []
+            }));
+            return;
+        }
+
         let numValue = isInteger ? parseInt(value) : parseFloat(value);
 
         // NaN 체크
         if (isNaN(numValue)) {
-            numValue = min;
+            numValue = 0;
         }
 
         // 범위 제한
@@ -724,7 +844,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         try {
             // 배송비가 포함된 항목 제거하고 순수 상품만 전달
             const pureItems = orderData.items?.filter(item => item.product !== '배송비') || [];
-            
+
             await onSubmit({
                 ...orderData,
                 items: pureItems,
@@ -835,25 +955,54 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                         onDragEnd={handleDragEnd}
                                     >
                                         <div className="overflow-x-auto max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg min-h-96">
-                                            <table className="w-full border-collapse border border-gray-300 dark:border-gray-600" style={{tableLayout: 'fixed', minWidth: '1560px'}}>
+                                            {(() => {
+                                                const isLegacy = orderData.items?.some(item => !item.printingOption && (
+                                                    (item.smallPrintingQuantity ?? 0) > 0 ||
+                                                    (item.largePrintingQuantity ?? 0) > 0 ||
+                                                    (item.extraLargePrintingQuantity ?? 0) > 0
+                                                ));
+                                                const thClass = "border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100";
+                                                return (
+                                            <table className="w-full border-collapse border border-gray-300 dark:border-gray-600" style={{tableLayout: 'fixed', minWidth: isLegacy ? '1560px' : '1800px'}}>
                                                 <colgroup>
-                                                <col style={{ width: '50px' }} /><col style={{ width: '200px' }} /><col style={{ width: '80px' }} /><col style={{ width: '100px' }} /><col style={{ width: '100px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '140px' }} /><col style={{ width: '120px' }} /><col style={{ width: '150px' }} /><col style={{ width: '140px' }} />
+                                                {isLegacy ? (
+                                                    <>
+                                                    <col style={{ width: '50px' }} /><col style={{ width: '200px' }} /><col style={{ width: '80px' }} /><col style={{ width: '100px' }} /><col style={{ width: '100px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '140px' }} /><col style={{ width: '120px' }} /><col style={{ width: '150px' }} /><col style={{ width: '140px' }} />
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                    <col style={{ width: '50px' }} /><col style={{ width: '200px' }} /><col style={{ width: '80px' }} /><col style={{ width: '100px' }} /><col style={{ width: '100px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '70px' }} /><col style={{ width: '70px' }} /><col style={{ width: '70px' }} /><col style={{ width: '70px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '150px' }} /><col style={{ width: '140px' }} />
+                                                    </>
+                                                )}
                                             </colgroup>
                                             <thead className="sticky top-0 bg-gray-100 dark:bg-gray-700 z-10">
                                                 <tr className="bg-gray-100 dark:bg-gray-700">
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">No.</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">상품명</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">수량</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">사이즈</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">색상</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">의류 단가</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">커스텀인쇄</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">대형인쇄</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">개별단가</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">단가</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">총 금액</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">비고</th>
-                                                    <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">관리</th>
+                                                    <th className={thClass}>No.</th>
+                                                    <th className={thClass}>상품명</th>
+                                                    <th className={thClass}>수량</th>
+                                                    <th className={thClass}>사이즈</th>
+                                                    <th className={thClass}>색상</th>
+                                                    <th className={thClass}>의류 단가</th>
+                                                    {isLegacy ? (
+                                                        <>
+                                                            <th className={thClass}>커스텀인쇄</th>
+                                                            <th className={thClass}>대형인쇄</th>
+                                                            <th className={thClass}>개별단가</th>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <th className={thClass}>프린팅</th>
+                                                            <th className={thClass}>소형</th>
+                                                            <th className={thClass}>중형</th>
+                                                            <th className={thClass}>대형</th>
+                                                            <th className={thClass}>특대형</th>
+                                                            <th className={thClass}>개별단가</th>
+                                                        </>
+                                                    )}
+                                                    <th className={thClass}>단가</th>
+                                                    <th className={thClass}>총 금액</th>
+                                                    <th className={thClass}>비고</th>
+                                                    <th className={thClass}>관리</th>
                                                 </tr>
                                             </thead>
                                             <SortableContext
@@ -875,6 +1024,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                                 openProductSelection={openProductSelection}
                                                                 calculateUnitPrice={calculateUnitPrice}
                                                                 calculateItemTotal={calculateItemTotal}
+                                                                totalQuantity={orderData.items?.reduce((sum, i) => sum + Math.max(0, Number(i.quantity) || 0), 0) || 0}
                                                                 highlightedItems={highlightedItems}
                                                                 orderItemsLength={orderData.items?.length || 0}
                                                                 productSizes={productSizes}
@@ -884,6 +1034,8 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                 </tbody>
                                             </SortableContext>
                                         </table>
+                                                );
+                                            })()}
                                     </div>
                                 </DndContext>
                                 ) : (
@@ -903,7 +1055,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                         <span className="text-gray-700 dark:text-gray-300">상품 금액</span>
                                         <span className="font-medium text-gray-900 dark:text-gray-100">{totalPrice.toLocaleString()}원</span>
                                     </div>
-                                    
+
                                     {/* 배송비 */}
                                     <div className="mb-3">
                                         <div className="flex justify-between items-center mb-2">
@@ -937,7 +1089,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                             </label>
                                         </div>
                                     </div>
-                                    
+
                                     {/* 구분선 */}
                                     <div className="border-t border-blue-300 dark:border-blue-700 pt-3 mt-3">
                                         <div className="flex justify-between items-center">

@@ -123,13 +123,17 @@ export default function AnalyticsPage() {
                     extra_large_printing_price?: number;
                     design_work_quantity?: number;
                     design_work_price?: number;
+                    printing_option?: string | null;
+                    small_print_count?: number;
+                    medium_print_count?: number;
+                    large_print_count?: number;
+                    extra_large_print_count?: number;
                     remarks?: string;
                 }) => {
-                    // 안전한 아이템 변환
                     const productInfo = item.product as { id?: string; name?: string; default_price?: number; wholesale_price?: number } | undefined;
                     return {
                         id: item.id || '',
-                        product: productInfo?.name || item.product_name || '알 수 없는 제품', // 폴백 처리
+                        product: productInfo?.name || item.product_name || '알 수 없는 제품',
                         productId: item.product_id || '',
                         quantity: Number(item.quantity) || 0,
                         size: item.size || '',
@@ -141,8 +145,12 @@ export default function AnalyticsPage() {
                         extraLargePrintingPrice: Number(item.extra_large_printing_price) || 0,
                         designWorkQuantity: Number(item.design_work_quantity) || 0,
                         designWorkPrice: Number(item.design_work_price) || 0,
-                        remarks: item.remarks || '-', // 비고 필드 추가
-                        // 정규화된 제품 정보 추가
+                        printingOption: item.printing_option || null,
+                        smallPrintCount: Number(item.small_print_count) || 0,
+                        mediumPrintCount: Number(item.medium_print_count) || 0,
+                        largePrintCount: Number(item.large_print_count) || 0,
+                        extraLargePrintCount: Number(item.extra_large_print_count) || 0,
+                        remarks: item.remarks || '-',
                         productInfo: productInfo?.id ? productInfo : undefined
                     };
                 }) : []
@@ -170,9 +178,18 @@ export default function AnalyticsPage() {
         const baseCost = wholesalePrice * item.quantity;
 
         // 인쇄 비용 (고정 비용으로 가정)
-        const printingCost = (item.smallPrintingQuantity || 0) * 2000 +
+        let printingCost = 0;
+        if (item.printingOption) {
+            // 새 프린팅 방식: calculateUnitPrice에서 이미 계산되므로 별도 원가 추정
+            printingCost = ((item.smallPrintCount || 0) * 1000 +
+                           (item.mediumPrintCount || 0) * 1500 +
+                           (item.largePrintCount || 0) * 2000 +
+                           (item.extraLargePrintCount || 0) * 3000);
+        } else {
+            printingCost = (item.smallPrintingQuantity || 0) * 2000 +
                            (item.largePrintingQuantity || 0) * 3000 +
                            (item.extraLargePrintingQuantity || 0) * 4000;
+        }
 
         // 디자인 작업 비용
         const designCost = (item.designWorkPrice || 0) * 0.3; // 디자인 비용의 30%가 실제 비용
