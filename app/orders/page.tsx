@@ -36,6 +36,7 @@ interface SupabaseOrderItem {
     medium_print_count?: number;
     large_print_count?: number;
     extra_large_print_count?: number;
+    printing_configs?: string | null;
     remarks?: string;
 }
 
@@ -104,11 +105,13 @@ const OrdersPage: React.FC = () => {
                             mediumPrintCount: item.medium_print_count || 0,
                             largePrintCount: item.large_print_count || 0,
                             extraLargePrintCount: item.extra_large_print_count || 0,
+                            printingConfigs: item.printing_configs ? (typeof item.printing_configs === 'string' ? JSON.parse(item.printing_configs) : item.printing_configs) : undefined,
                             remarks: item.remarks || '-',
                             productInfo: item.product?.id ? item.product : undefined
                         }))
                     }));
                     console.log('첫 번째 변환된 주문:', formattedOrders[0]);
+                    console.log('첫 번째 주문 아이템 printingConfigs:', formattedOrders[0]?.items?.[0]?.printingConfigs);
                     setOrders(formattedOrders);
                 } else {
                     // 데이터가 없으면 초기 데이터로 설정하고 Supabase에 저장

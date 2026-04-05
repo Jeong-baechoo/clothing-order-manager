@@ -143,6 +143,7 @@ export async function addOrder(order) {
           medium_print_count: item.mediumPrintCount || 0,
           large_print_count: item.largePrintCount || 0,
           extra_large_print_count: item.extraLargePrintCount || 0,
+          printing_configs: item.printingConfigs ? JSON.stringify(item.printingConfigs) : null,
           remarks: item.remarks || '-'
         }));
 
@@ -259,6 +260,7 @@ export async function updateOrder(order) {
             medium_print_count: item.mediumPrintCount || 0,
             large_print_count: item.largePrintCount || 0,
             extra_large_print_count: item.extraLargePrintCount || 0,
+            printing_configs: item.printingConfigs ? JSON.stringify(item.printingConfigs) : null,
             remarks: item.remarks || '-'
           }));
 

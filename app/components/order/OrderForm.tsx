@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Order, OrderItem, PrintingOption, printingOptionMap, getPrintingUnitPrice, getQuantityTier } from '../../models/orderTypes';
+import { Order, OrderItem, ProductGroup, ProductVariant } from '../../models/orderTypes';
 import ProductSelectionModal from './ProductSelectionModal';
-import { calculateUnitPrice, calculateItemTotal, calculateTotalPrice } from '../../utils/order-calculations';
+import { calculateTotalPrice } from '../../utils/order-calculations';
+import { isLegacyOrder, orderItemsToGroups, groupsToOrderItems, calculateGroupSubtotal, calculateGroupsTotalQuantity } from '../../utils/product-group-utils';
+import OrderFormLegacyTable from './OrderFormLegacy';
+import ProductGroupCard from './ProductGroupCard';
 import {
     DndContext,
     closestCenter,
@@ -19,10 +22,6 @@ import {
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import {
-    useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 
 interface OrderFormProps {
     onSubmit: (order: Partial<Order>) => void;
@@ -33,388 +32,44 @@ interface OrderFormProps {
     submitTrigger?: number;
 }
 
-// SortableRow 컴포넌트 정의
-interface SortableRowProps {
-    item: OrderItem;
-    index: number;
-    handleItemChange: (index: number, field: keyof OrderItem, value: string | number) => void;
-    handleSafeNumberChange: (index: number, field: keyof OrderItem, value: string, min?: number, max?: number, isInteger?: boolean) => void;
-    handleRemoveItem: (index: number) => void;
-    handleCopyItem: (index: number) => void;
-    handleMoveItemUp: (index: number) => void;
-    handleMoveItemDown: (index: number) => void;
-    openProductSelection: (index: number) => void;
-    calculateUnitPrice: (item: OrderItem, totalQuantity?: number) => number;
-    calculateItemTotal: (item: OrderItem, totalQuantity?: number) => number;
-    totalQuantity: number;
-    highlightedItems: Set<string>;
-    orderItemsLength: number;
-    productSizes: string[];
-    productColors: string[];
-}
-
-function SortableRow({
-    item,
-    index,
-    handleItemChange,
-    handleSafeNumberChange,
-    handleRemoveItem,
-    handleCopyItem,
-    handleMoveItemUp,
-    handleMoveItemDown,
-    openProductSelection,
-    calculateUnitPrice,
-    calculateItemTotal,
-    totalQuantity,
-    highlightedItems,
-    orderItemsLength,
-    productSizes,
-    productColors
-}: SortableRowProps) {
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        transition,
-        isDragging,
-    } = useSortable({ id: item.id });
-
-    const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.5 : 1,
-    };
-
-    return (
-        <tr
-            ref={setNodeRef}
-            style={style}
-            className={`
-                hover:bg-gray-50 dark:hover:bg-gray-700 
-                transition-all duration-300 ease-out
-                ${highlightedItems.has(item.id || '') ? 
-                    'bg-blue-50 dark:bg-blue-900/30 ring-1 ring-blue-300 dark:ring-blue-700' : 
-                    ''
-                }
-                ${isDragging ? 'cursor-grabbing' : ''}
-            `}
-        >
-            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center font-medium">
-                <div className="flex items-center justify-center">
-                    <button
-                        type="button"
-                        className="drag-handle mr-2 cursor-grab text-gray-400 hover:text-gray-600 touch-none"
-                        {...attributes}
-                        {...listeners}
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
-                        </svg>
-                    </button>
-                    {index + 1}
-                </div>
-            </td>
-            <td className="border border-gray-300 dark:border-gray-600 px-2 py-2">
-                <div className="w-full">
-                    <input
-                        type="text"
-                        value={item.product || ''}
-                        onChange={(e) => {
-                            const value = e.target.value.slice(0, 100);
-                            handleItemChange(index, 'product', value);
-                        }}
-                        placeholder="상품명"
-                        className="w-full px-1 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-xs focus:ring-1 focus:ring-blue-500 mb-1"
-                    />
-                    <button
-                        type="button"
-                        onClick={() => openProductSelection(index)}
-                        className="w-full px-1 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
-                        title="등록된 상품에서 선택"
-                    >
-                        선택
-                    </button>
-                </div>
-            </td>
-            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                <input
-                    type="number"
-                    value={item.quantity || ''}
-                    onChange={(e) => handleSafeNumberChange(index, 'quantity', e.target.value, 1, 9999, true)}
-                    min="1"
-                    max="9999"
-                    required
-                    className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                />
-            </td>
-            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                <input
-                    list={`size-list-${index}`}
-                    value={item.size || ''}
-                    onChange={(e) => handleItemChange(index, 'size', e.target.value)}
-                    required
-                    placeholder="사이즈 선택 또는 입력"
-                    className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                />
-                <datalist id={`size-list-${index}`}>
-                    {productSizes.map(size => (
-                        <option key={size} value={size} />
-                    ))}
-                </datalist>
-            </td>
-            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                <input
-                    list={`color-list-${index}`}
-                    value={item.color || ''}
-                    onChange={(e) => handleItemChange(index, 'color', e.target.value)}
-                    required
-                    placeholder="색상 선택 또는 입력"
-                    className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                />
-                <datalist id={`color-list-${index}`}>
-                    {productColors.map(color => (
-                        <option key={color} value={color} />
-                    ))}
-                </datalist>
-            </td>
-            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                <input
-                    type="number"
-                    value={item.price || ''}
-                    onChange={(e) => handleSafeNumberChange(index, 'price', e.target.value, 1, 10000000, false)}
-                    min="1"
-                    max="10000000"
-                    step="1"
-                    required
-                    placeholder="원"
-                    className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                />
-            </td>
-            {item.printingOption !== undefined ? (
-                <>
-                    <td className="border border-gray-300 dark:border-gray-600 px-2 py-2">
-                        <select
-                            value={item.printingOption || ''}
-                            onChange={(e) => handleItemChange(index, 'printingOption', e.target.value || '')}
-                            className="w-full px-1 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-xs focus:ring-1 focus:ring-blue-500"
-                        >
-                            <option value="">없음</option>
-                            {(Object.entries(printingOptionMap) as [PrintingOption, string][]).map(([key, label]) => (
-                                <option key={key} value={key}>{label}</option>
-                            ))}
-                        </select>
-                        {item.printingOption && (
-                            <div className="text-xs text-gray-500 mt-1">
-                                {getQuantityTier(totalQuantity)}장 구간
-                            </div>
-                        )}
-                    </td>
-                    {(['smallPrintCount', 'mediumPrintCount', 'largePrintCount', 'extraLargePrintCount'] as const).map((field, i) => {
-                        const sizeMap: Record<string, 'small' | 'medium' | 'large' | 'extraLarge'> = {
-                            smallPrintCount: 'small',
-                            mediumPrintCount: 'medium',
-                            largePrintCount: 'large',
-                            extraLargePrintCount: 'extraLarge',
-                        };
-                        const unitPrice = item.printingOption ? getPrintingUnitPrice(item.printingOption, sizeMap[field], totalQuantity) : 0;
-                        return (
-                            <td key={i} className="border border-gray-300 dark:border-gray-600 px-1 py-2">
-                                <input
-                                    type="number"
-                                    value={item[field] || ''}
-                                    onChange={(e) => handleSafeNumberChange(index, field, e.target.value, 0, 99, true)}
-                                    min="0"
-                                    max="99"
-                                    placeholder="0"
-                                    disabled={!item.printingOption}
-                                    className="w-full px-1 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-xs focus:ring-1 focus:ring-blue-500 text-center disabled:opacity-40"
-                                />
-                                {item.printingOption && (item[field] ?? 0) > 0 && (
-                                    <div className="text-xs text-gray-500 mt-1 text-center">
-                                        {unitPrice.toLocaleString()}원
-                                    </div>
-                                )}
-                            </td>
-                        );
-                    })}
-                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                        <div className="space-y-1">
-                            <input
-                                type="number"
-                                value={item.extraLargePrintingQuantity || ''}
-                                onChange={(e) => handleSafeNumberChange(index, 'extraLargePrintingQuantity', e.target.value, 0, 9999, true)}
-                                min="0"
-                                placeholder="개수"
-                                className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-xs focus:ring-1 focus:ring-blue-500"
-                            />
-                            <input
-                                type="number"
-                                value={item.extraLargePrintingPrice || ''}
-                                onChange={(e) => handleSafeNumberChange(index, 'extraLargePrintingPrice', e.target.value, 0, 10000000, false)}
-                                min="0"
-                                placeholder="단가"
-                                className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-xs focus:ring-1 focus:ring-blue-500"
-                            />
-                        </div>
-                    </td>
-                </>
-            ) : (
-                <>
-                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                        <input
-                            type="number"
-                            value={item.smallPrintingQuantity || ''}
-                            onChange={(e) => handleSafeNumberChange(index, 'smallPrintingQuantity', e.target.value, 0, 9999, true)}
-                            min="0"
-                            placeholder="개수"
-                            className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                        />
-                        <div className="text-xs text-gray-500 mt-1">1,500원/개</div>
-                    </td>
-                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                        <input
-                            type="number"
-                            value={item.largePrintingQuantity || ''}
-                            onChange={(e) => handleSafeNumberChange(index, 'largePrintingQuantity', e.target.value, 0, 9999, true)}
-                            min="0"
-                            placeholder="개수"
-                            className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                        />
-                        <div className="text-xs text-gray-500 mt-1">3,000원/개</div>
-                    </td>
-                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                        <div className="space-y-1">
-                            <input
-                                type="number"
-                                value={item.extraLargePrintingQuantity || ''}
-                                onChange={(e) => handleSafeNumberChange(index, 'extraLargePrintingQuantity', e.target.value, 0, 9999, true)}
-                                min="0"
-                                placeholder="개수"
-                                className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                            />
-                            <input
-                                type="number"
-                                value={item.extraLargePrintingPrice || ''}
-                                onChange={(e) => handleSafeNumberChange(index, 'extraLargePrintingPrice', e.target.value, 0, 10000000, false)}
-                                min="0"
-                                placeholder="단가"
-                                className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                            />
-                        </div>
-                    </td>
-                </>
-            )}
-            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right font-semibold text-green-600">
-                {calculateUnitPrice(item, totalQuantity).toLocaleString()}원
-            </td>
-            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right font-semibold text-blue-600">
-                {calculateItemTotal(item, totalQuantity).toLocaleString()}원
-            </td>
-            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                <input
-                    type="text"
-                    value={item.remarks !== undefined ? item.remarks : '-'}
-                    onChange={(e) => handleItemChange(index, 'remarks', e.target.value)}
-                    placeholder="비고"
-                    className="w-full px-2 py-1 border border-gray-200 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-100 rounded text-sm focus:ring-1 focus:ring-blue-500"
-                />
-            </td>
-            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
-                <div className="flex justify-center items-center space-x-1">
-                    {index > 0 && (
-                        <button
-                            type="button"
-                            onClick={() => handleMoveItemUp(index)}
-                            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            title="위로 이동"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                            </svg>
-                        </button>
-                    )}
-                    {index < orderItemsLength - 1 && (
-                        <button
-                            type="button"
-                            onClick={() => handleMoveItemDown(index)}
-                            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            title="아래로 이동"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                    )}
-                    <button
-                        type="button"
-                        onClick={() => handleCopyItem(index)}
-                        className="text-blue-500 hover:text-blue-700 p-1 rounded-md hover:bg-blue-50 transition-colors"
-                        title="상품 복사"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-                        </svg>
-                    </button>
-                    {orderItemsLength > 1 && (
-                        <button
-                            type="button"
-                            onClick={() => handleRemoveItem(index)}
-                            className="text-red-500 hover:text-red-700 p-1 rounded-md hover:bg-red-50 transition-colors"
-                            title="상품 삭제"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
-                    )}
-                </div>
-            </td>
-        </tr>
-    );
-}
-
 export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = false, hideButtons = false, submitTrigger }: OrderFormProps) {
+    // =========================================================================
+    // 공통 상태
+    // =========================================================================
     const [orderData, setOrderData] = useState<Partial<Order>>({
         customerName: '',
         phone: '',
         address: '',
         status: 'pending',
         paymentMethod: '계좌이체',
-        items: [
-            {
-                id: `item-${Date.now()}-1`,
-                product: '',
-                productId: '',
-                quantity: 1,
-                size: '',
-                color: '',
-                price: 0,
-                printingOption: null,
-                smallPrintCount: 0,
-                mediumPrintCount: 0,
-                largePrintCount: 0,
-                extraLargePrintCount: 0,
-                extraLargePrintingQuantity: 0,
-                extraLargePrintingPrice: 0,
-                remarks: '-'
-            }
-        ]
+        items: [],
     });
 
-    const [shippingFee, setShippingFee] = useState<number>(3500); // 배송비 별도 관리
-    const [autoShipping, setAutoShipping] = useState<boolean>(true); // 배송비 자동 계산 여부
-
+    const [shippingFee, setShippingFee] = useState<number>(3500);
+    const [autoShipping, setAutoShipping] = useState<boolean>(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showProductModal, setShowProductModal] = useState(false);
-    const [currentItemIndex, setCurrentItemIndex] = useState<number | null>(null);
+
+    // =========================================================================
+    // 레거시 모드 상태
+    // =========================================================================
+    const [isLegacyMode, setIsLegacyMode] = useState(false);
     const [highlightedItems, setHighlightedItems] = useState<Set<string>>(new Set());
 
-    // 로컬 상품 데이터 (기존 DB에 없는 필드들)
+    // =========================================================================
+    // 계층형 모드 상태
+    // =========================================================================
+    const [productGroups, setProductGroups] = useState<ProductGroup[]>([]);
+    const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+    const [currentGroupIndex, setCurrentGroupIndex] = useState<number | null>(null);
+    // 레거시 모드용 인덱스
+    const [currentItemIndex, setCurrentItemIndex] = useState<number | null>(null);
+
+    // 로컬 상품 데이터
     const productSizes = ['CS', 'CM', 'CL', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
     const productColors = ['화이트', '블랙', '그레이', '네이비', '레드', '블루', '그린', '옐로우', '오렌지', '핑크', '브라운', '레드켓', '태극'];
 
-    // 드래그 앤 드롭을 위한 센서 설정
+    // 드래그 앤 드롭 센서
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
@@ -426,61 +81,53 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         })
     );
 
-    // 드래그 종료 핸들러
-    const handleDragEnd = (event: DragEndEvent) => {
-        const { active, over } = event;
-
-        if (over && active.id !== over.id) {
-            setOrderData((prev) => {
-                const oldIndex = prev.items?.findIndex((item) => item.id === active.id) ?? -1;
-                const newIndex = prev.items?.findIndex((item) => item.id === over.id) ?? -1;
-
-                if (oldIndex !== -1 && newIndex !== -1 && prev.items) {
-                    const newItems = arrayMove(prev.items, oldIndex, newIndex);
-
-                    // 이동한 항목에 하이라이트 효과 추가
-                    const movedItem = newItems[newIndex];
-                    if (movedItem.id) {
-                        addHighlight(movedItem.id);
-                    }
-
-                    return {
-                        ...prev,
-                        items: newItems,
-                    };
-                }
-                return prev;
-            });
-        }
-    };
-
-    // 초기 데이터가 있으면 폼 데이터 설정
+    // =========================================================================
+    // 초기화
+    // =========================================================================
     useEffect(() => {
         if (initialData) {
-            // 배송비 항목 찾기
             const shippingItem = initialData.items?.find(item => item.product === '배송비');
             const regularItems = initialData.items?.filter(item => item.product !== '배송비') || [];
+            const itemsWithIds = regularItems.map((item, index) => ({
+                ...item,
+                id: item.id || `item-temp-${Date.now()}-${index + 1}`
+            }));
 
             setOrderData({
                 ...initialData,
-                items: regularItems.map((item, index) => ({
-                    ...item,
-                    id: item.id || `item-temp-${Date.now()}-${index + 1}`
-                }))
+                items: itemsWithIds,
             });
 
             // 배송비 설정
             if (shippingItem) {
                 setShippingFee(shippingItem.price || 0);
-                setAutoShipping(false); // 기존 데이터가 있으면 수동 모드
+                setAutoShipping(false);
             } else if (initialData.shippingFee !== undefined) {
                 setShippingFee(initialData.shippingFee);
-                setAutoShipping(false); // 기존 데이터가 있으면 수동 모드
+                setAutoShipping(false);
             }
-        }
-    }, [initialData]);
 
-    // 외부에서 제출 트리거 시 폼 제출
+            // 편집 모드: 레거시 판별
+            if (isEdit && itemsWithIds.length > 0) {
+                if (isLegacyOrder(itemsWithIds)) {
+                    setIsLegacyMode(true);
+                } else {
+                    setIsLegacyMode(false);
+                    const groups = orderItemsToGroups(itemsWithIds);
+                    setProductGroups(groups);
+                    setExpandedGroups(new Set(groups.map(g => g.id)));
+                }
+            }
+        } else {
+            // 새 주문: 계층형 UI, 빈 그룹 1개
+            setIsLegacyMode(false);
+            const initialGroup = createEmptyGroup();
+            setProductGroups([initialGroup]);
+            setExpandedGroups(new Set([initialGroup.id]));
+        }
+    }, [initialData, isEdit]);
+
+    // 외부 제출 트리거
     useEffect(() => {
         if (submitTrigger && submitTrigger > 0) {
             const formElement = document.querySelector('form');
@@ -491,7 +138,39 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         }
     }, [submitTrigger]);
 
-    // 기본 주문 정보 변경 핸들러
+    // =========================================================================
+    // 가격 계산
+    // =========================================================================
+    const totalQuantity = useMemo(() => {
+        if (isLegacyMode) {
+            return (orderData.items || []).reduce((sum, item) => sum + Math.max(0, Number(item.quantity) || 0), 0);
+        }
+        return calculateGroupsTotalQuantity(productGroups);
+    }, [isLegacyMode, orderData.items, productGroups]);
+
+    const totalPrice = useMemo(() => {
+        if (isLegacyMode) {
+            const items = orderData.items?.filter(item => item.product !== '배송비') || [];
+            return calculateTotalPrice(items);
+        }
+        const items = groupsToOrderItems(productGroups);
+        return calculateTotalPrice(items);
+    }, [isLegacyMode, orderData.items, productGroups]);
+
+    // 배송비 자동 계산
+    useEffect(() => {
+        if (autoShipping) {
+            if (totalPrice < 100000 && totalPrice > 0) {
+                setShippingFee(3500);
+            } else {
+                setShippingFee(0);
+            }
+        }
+    }, [totalPrice, autoShipping]);
+
+    // =========================================================================
+    // 공통 핸들러
+    // =========================================================================
     const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setOrderData(prev => ({
@@ -500,7 +179,32 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         }));
     }, []);
 
-    // 상품 항목 변경 핸들러
+    // =========================================================================
+    // 유틸리티
+    // =========================================================================
+    function createEmptyGroup(): ProductGroup {
+        const groupId = `group-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        return {
+            id: groupId,
+            product: '',
+            productId: undefined,
+            price: 0,
+            variants: [{
+                id: `variant-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                quantity: 1,
+                size: '',
+                color: '',
+                remarks: '',
+            }],
+            printings: [],
+            extraLargePrintingQuantity: 0,
+            extraLargePrintingPrice: 0,
+        };
+    }
+
+    // =========================================================================
+    // 레거시 모드 핸들러들
+    // =========================================================================
     const handleItemChange = useCallback((index: number, field: keyof OrderItem, value: string | number) => {
         setOrderData(prev => ({
             ...prev,
@@ -510,9 +214,37 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         }));
     }, []);
 
-    // 상품 항목 추가 핸들러
+    const handleSafeNumberChange = useCallback((
+        index: number,
+        field: keyof OrderItem,
+        value: string,
+        min: number = 0,
+        max: number = 9999,
+        isInteger: boolean = true
+    ) => {
+        if (value === '' || value === '-') {
+            setOrderData(prev => ({
+                ...prev,
+                items: prev.items?.map((item, i) =>
+                    i === index ? { ...item, [field]: 0 } : item
+                ) || []
+            }));
+            return;
+        }
+
+        let numValue = isInteger ? parseInt(value) : parseFloat(value);
+        if (isNaN(numValue)) numValue = 0;
+        numValue = Math.max(min, Math.min(max, numValue));
+
+        setOrderData(prev => ({
+            ...prev,
+            items: prev.items?.map((item, i) =>
+                i === index ? { ...item, [field]: numValue } : item
+            ) || []
+        }));
+    }, []);
+
     const handleAddItem = useCallback(() => {
-        // 기존 주문 수정 시 레거시 방식 유지
         const firstItem = orderData.items?.[0];
         const useLegacy = firstItem && !firstItem.printingOption && (
             (firstItem.smallPrintingQuantity ?? 0) > 0 ||
@@ -555,11 +287,8 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
             ...prev,
             items: [...(prev.items || []), newItem]
         }));
-    }, [orderData.items?.length]);
+    }, [orderData.items]);
 
-    // 배송비 추가 핸들러 제거 (더 이상 필요 없음)
-
-    // 상품 항목 제거 핸들러
     const handleRemoveItem = useCallback((index: number) => {
         setOrderData(prev => ({
             ...prev,
@@ -567,13 +296,12 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         }));
     }, []);
 
-    // 상품 항목 복사 핸들러
     const handleCopyItem = useCallback((index: number) => {
         const itemToCopy = orderData.items?.[index];
         if (!itemToCopy) return;
 
         const newItem: OrderItem = {
-            ...JSON.parse(JSON.stringify(itemToCopy)), // 깊은 복사
+            ...JSON.parse(JSON.stringify(itemToCopy)),
             id: `item-${Date.now()}-${(orderData.items?.length || 0) + 1}`
         };
 
@@ -583,10 +311,8 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         }));
     }, [orderData.items]);
 
-    // 하이라이트 효과 추가 함수
     const addHighlight = useCallback((itemId: string) => {
         setHighlightedItems(prev => new Set(prev).add(itemId));
-        // 0.6초 후 하이라이트 제거
         setTimeout(() => {
             setHighlightedItems(prev => {
                 const newSet = new Set(prev);
@@ -596,80 +322,254 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         }, 600);
     }, []);
 
-    // 상품 항목 위로 이동 핸들러
     const handleMoveItemUp = useCallback((index: number) => {
-        if (index === 0) return; // 첫 번째 항목은 위로 이동 불가
-
+        if (index === 0) return;
         setOrderData(prev => {
             const newItems = [...(prev.items || [])];
             const movingItem = newItems[index];
-            // 현재 항목과 위 항목을 교환
             [newItems[index - 1], newItems[index]] = [newItems[index], newItems[index - 1]];
-
-            // 이동한 항목에 하이라이트 효과 추가
-            if (movingItem.id) {
-                addHighlight(movingItem.id);
-            }
-
-            return {
-                ...prev,
-                items: newItems
-            };
+            if (movingItem.id) addHighlight(movingItem.id);
+            return { ...prev, items: newItems };
         });
     }, [addHighlight]);
 
-    // 상품 항목 아래로 이동 핸들러
     const handleMoveItemDown = useCallback((index: number) => {
         const itemsLength = orderData.items?.length || 0;
-        if (index === itemsLength - 1) return; // 마지막 항목은 아래로 이동 불가
-
+        if (index === itemsLength - 1) return;
         setOrderData(prev => {
             const newItems = [...(prev.items || [])];
             const movingItem = newItems[index];
-            // 현재 항목과 아래 항목을 교환
             [newItems[index], newItems[index + 1]] = [newItems[index + 1], newItems[index]];
-
-            // 이동한 항목에 하이라이트 효과 추가
-            if (movingItem.id) {
-                addHighlight(movingItem.id);
-            }
-
-            return {
-                ...prev,
-                items: newItems
-            };
+            if (movingItem.id) addHighlight(movingItem.id);
+            return { ...prev, items: newItems };
         });
     }, [orderData.items?.length, addHighlight]);
 
-    // 상품 금액 계산 (배송비 제외)
-    const totalPrice = useMemo(() => {
-        const items = orderData.items?.filter(item => item.product !== '배송비') || [];
-        return calculateTotalPrice(items);
-    }, [orderData.items]);
-
-    // 배송비 자동 계산 (상품 금액이 100,000원 미만일 때)
-    useEffect(() => {
-        if (autoShipping) {
-            if (totalPrice < 100000 && totalPrice > 0) {
-                setShippingFee(3500);
-            } else {
-                setShippingFee(0);
-            }
+    const handleLegacyDragEnd = useCallback((event: DragEndEvent) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            setOrderData((prev) => {
+                const oldIndex = prev.items?.findIndex((item) => item.id === active.id) ?? -1;
+                const newIndex = prev.items?.findIndex((item) => item.id === over.id) ?? -1;
+                if (oldIndex !== -1 && newIndex !== -1 && prev.items) {
+                    const newItems = arrayMove(prev.items, oldIndex, newIndex);
+                    const movedItem = newItems[newIndex];
+                    if (movedItem.id) addHighlight(movedItem.id);
+                    return { ...prev, items: newItems };
+                }
+                return prev;
+            });
         }
-    }, [totalPrice, autoShipping]);
+    }, [addHighlight]);
 
+    // =========================================================================
+    // 계층형 모드 핸들러들
+    // =========================================================================
+    const handleAddGroup = useCallback(() => {
+        const newGroup = createEmptyGroup();
+        setProductGroups(prev => [...prev, newGroup]);
+        setExpandedGroups(prev => new Set(prev).add(newGroup.id));
+    }, []);
+
+    const handleRemoveGroup = useCallback((groupIndex: number) => {
+        setProductGroups(prev => prev.filter((_, i) => i !== groupIndex));
+    }, []);
+
+    const handleCopyGroup = useCallback((groupIndex: number) => {
+        setProductGroups(prev => {
+            const source = prev[groupIndex];
+            if (!source) return prev;
+            const ts = Date.now();
+            const r = () => Math.random().toString(36).slice(2, 7);
+            const copy: ProductGroup = {
+                ...JSON.parse(JSON.stringify(source)),
+                id: `group-${ts}-${r()}`,
+                variants: source.variants.map(v => ({
+                    ...v,
+                    id: `variant-${ts}-${r()}`,
+                })),
+                printings: source.printings.map(p => ({
+                    ...p,
+                    id: `print-${ts}-${r()}`,
+                })),
+            };
+            const next = [...prev];
+            next.splice(groupIndex + 1, 0, copy);
+            return next;
+        });
+    }, []);
+
+    const handleGroupChange = useCallback((groupIndex: number, field: string, value: string | number) => {
+        setProductGroups(prev => prev.map((g, i) =>
+            i === groupIndex ? { ...g, [field]: value } : g
+        ));
+    }, []);
+
+    const handleVariantChange = useCallback((groupIndex: number, variantIndex: number, field: keyof ProductVariant, value: string | number) => {
+        setProductGroups(prev => prev.map((g, i) => {
+            if (i !== groupIndex) return g;
+            return {
+                ...g,
+                variants: g.variants.map((v, vi) =>
+                    vi === variantIndex ? { ...v, [field]: value } : v
+                ),
+            };
+        }));
+    }, []);
+
+    const handleAddVariant = useCallback((groupIndex: number) => {
+        setProductGroups(prev => prev.map((g, i) => {
+            if (i !== groupIndex) return g;
+            return {
+                ...g,
+                variants: [...g.variants, {
+                    id: `variant-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                    quantity: 1,
+                    size: '',
+                    color: '',
+                    remarks: '',
+                }],
+            };
+        }));
+    }, []);
+
+    const handleRemoveVariant = useCallback((groupIndex: number, variantIndex: number) => {
+        setProductGroups(prev => prev.map((g, i) => {
+            if (i !== groupIndex) return g;
+            if (g.variants.length <= 1) return g;
+            return {
+                ...g,
+                variants: g.variants.filter((_, vi) => vi !== variantIndex),
+            };
+        }));
+    }, []);
+
+    const handlePrintingConfigChange = useCallback((groupIndex: number, printingIndex: number, field: string, value: string | number) => {
+        setProductGroups(prev => prev.map((g, i) => {
+            if (i !== groupIndex) return g;
+            return {
+                ...g,
+                printings: g.printings.map((p, pi) =>
+                    pi === printingIndex ? { ...p, [field]: value } : p
+                ),
+            };
+        }));
+    }, []);
+
+    const handleAddPrinting = useCallback((groupIndex: number) => {
+        setProductGroups(prev => prev.map((g, i) => {
+            if (i !== groupIndex) return g;
+            return {
+                ...g,
+                printings: [...g.printings, {
+                    id: `print-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                    printingOption: 'dtf' as const,
+                    smallPrintCount: 0,
+                    mediumPrintCount: 0,
+                    largePrintCount: 0,
+                    extraLargePrintCount: 0,
+                }],
+            };
+        }));
+    }, []);
+
+    const handleRemovePrinting = useCallback((groupIndex: number, printingIndex: number) => {
+        setProductGroups(prev => prev.map((g, i) => {
+            if (i !== groupIndex) return g;
+            return {
+                ...g,
+                printings: g.printings.filter((_, pi) => pi !== printingIndex),
+            };
+        }));
+    }, []);
+
+    const handleCustomPricingChange = useCallback((groupIndex: number, field: string, value: number) => {
+        setProductGroups(prev => prev.map((g, i) =>
+            i === groupIndex ? { ...g, [field]: value } : g
+        ));
+    }, []);
+
+    const handleToggleGroup = useCallback((groupId: string) => {
+        setExpandedGroups(prev => {
+            const next = new Set(prev);
+            if (next.has(groupId)) {
+                next.delete(groupId);
+            } else {
+                next.add(groupId);
+            }
+            return next;
+        });
+    }, []);
+
+    // 계층형 DnD
+    const handleGroupDragEnd = useCallback((event: DragEndEvent) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            setProductGroups(prev => {
+                const oldIndex = prev.findIndex(g => g.id === active.id);
+                const newIndex = prev.findIndex(g => g.id === over.id);
+                if (oldIndex !== -1 && newIndex !== -1) {
+                    return arrayMove(prev, oldIndex, newIndex);
+                }
+                return prev;
+            });
+        }
+    }, []);
+
+    // =========================================================================
+    // 상품 선택 모달
+    // =========================================================================
+    const openProductSelectionForLegacy = useCallback((index: number) => {
+        setCurrentItemIndex(index);
+        setCurrentGroupIndex(null);
+        setShowProductModal(true);
+    }, []);
+
+    const openProductSelectionForGroup = useCallback((groupIndex: number) => {
+        setCurrentGroupIndex(groupIndex);
+        setCurrentItemIndex(null);
+        setShowProductModal(true);
+    }, []);
+
+    const handleProductSelect = (product: { id: string; name: string; default_price: number; company_id: string; companies?: { name: string } }) => {
+        if (isLegacyMode && currentItemIndex !== null) {
+            setOrderData(prev => ({
+                ...prev,
+                items: prev.items?.map((item, i) =>
+                    i === currentItemIndex ? {
+                        ...item,
+                        product: product.name,
+                        productId: product.id,
+                        price: product.default_price || 0
+                    } : item
+                ) || []
+            }));
+        } else if (!isLegacyMode && currentGroupIndex !== null) {
+            setProductGroups(prev => prev.map((g, i) =>
+                i === currentGroupIndex ? {
+                    ...g,
+                    product: product.name,
+                    productId: product.id,
+                    price: product.default_price || 0,
+                } : g
+            ));
+        }
+        setCurrentItemIndex(null);
+        setCurrentGroupIndex(null);
+    };
+
+    // =========================================================================
     // 폼 유효성 검사
+    // =========================================================================
     const validateForm = (): { isValid: boolean; errors: string[] } => {
         const errors: string[] = [];
 
-        // 고객 정보 검증 강화
         if (!orderData.customerName?.trim()) {
             errors.push('고객 이름은 필수 입력 항목입니다.');
         } else if (orderData.customerName.length > 50) {
             errors.push('고객 이름은 50자를 초과할 수 없습니다.');
         }
 
-        // 전화번호 검증
         if (orderData.phone) {
             if (orderData.phone.length > 20) {
                 errors.push('전화번호는 20자를 초과할 수 없습니다.');
@@ -679,21 +579,21 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
             }
         }
 
-        // 주소 길이 검증
         if (orderData.address && orderData.address.length > 255) {
             errors.push('주소는 255자를 초과할 수 없습니다.');
         }
 
-        // 상품 검증 강화
-        if (!orderData.items || orderData.items.length === 0) {
+        // 레거시/계층 공통: 아이템 생성
+        const itemsToValidate = isLegacyMode
+            ? (orderData.items || [])
+            : groupsToOrderItems(productGroups);
+
+        if (itemsToValidate.length === 0) {
             errors.push('최소 하나 이상의 상품을 추가해주세요.');
         } else {
-            orderData.items.forEach((item, index) => {
+            itemsToValidate.forEach((item, index) => {
                 const itemNum = index + 1;
 
-                // 배송비는 더 이상 주문 항목으로 처리하지 않음
-
-                // 필수 필드 검증
                 if (!item.product?.trim()) {
                     errors.push(`${itemNum}번 상품명을 입력해주세요.`);
                 } else if (item.product.length > 100) {
@@ -712,18 +612,17 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                     errors.push(`${itemNum}번 상품의 색상은 30자를 초과할 수 없습니다.`);
                 }
 
-                // 숫자 필드 범위 검증
                 if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 9999) {
                     errors.push(`${itemNum}번 상품의 수량은 1-9999 사이의 정수여야 합니다.`);
                 }
 
-                if (item.price <= 0 || item.price > 10000000) {
+                // 복수 프린팅 추가 행(price=0)은 단가 검증 스킵
+                const isAdditionalPrintingRow = item.price === 0 && !!item.printingOption;
+                if (!isAdditionalPrintingRow && (item.price <= 0 || item.price > 10000000)) {
                     errors.push(`${itemNum}번 상품의 단가는 1-10,000,000원 사이여야 합니다.`);
                 }
 
-                // 인쇄 검증 (새/구 방식 분기)
                 if (item.printingOption) {
-                    // 새 프린팅 방식 검증
                     const printCounts = [item.smallPrintCount, item.mediumPrintCount, item.largePrintCount, item.extraLargePrintCount];
                     for (const count of printCounts) {
                         if (count !== undefined && (!Number.isInteger(count) || count < 0 || count > 99)) {
@@ -731,8 +630,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                             break;
                         }
                     }
-                } else {
-                    // 레거시 방식 검증
+                } else if (isLegacyMode) {
                     if (item.smallPrintingQuantity !== undefined &&
                         (!Number.isInteger(item.smallPrintingQuantity) ||
                             item.smallPrintingQuantity < 0 ||
@@ -756,9 +654,8 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
             });
         }
 
-        // 총액 검증
-        const total = calculateTotalPrice(orderData.items || []);
-        if (total > 999999999) {  // 10억 미만으로 제한
+        const total = calculateTotalPrice(itemsToValidate);
+        if (total > 999999999) {
             errors.push('총 주문 금액이 너무 큽니다.');
         }
         if (total <= 0) {
@@ -768,67 +665,9 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         return { isValid: errors.length === 0, errors };
     };
 
-    // 안전한 숫자 입력 핸들러
-    const handleSafeNumberChange = useCallback((
-        index: number,
-        field: keyof OrderItem,
-        value: string,
-        min: number = 0,
-        max: number = 9999,
-        isInteger: boolean = true
-    ) => {
-        // 빈 값이면 0으로 설정 (입력 중 지울 수 있도록)
-        if (value === '' || value === '-') {
-            setOrderData(prev => ({
-                ...prev,
-                items: prev.items?.map((item, i) =>
-                    i === index ? { ...item, [field]: 0 } : item
-                ) || []
-            }));
-            return;
-        }
-
-        let numValue = isInteger ? parseInt(value) : parseFloat(value);
-
-        // NaN 체크
-        if (isNaN(numValue)) {
-            numValue = 0;
-        }
-
-        // 범위 제한
-        numValue = Math.max(min, Math.min(max, numValue));
-
-        setOrderData(prev => ({
-            ...prev,
-            items: prev.items?.map((item, i) =>
-                i === index ? { ...item, [field]: numValue } : item
-            ) || []
-        }));
-    }, []);    // 상품 선택 핸들러
-    const handleProductSelect = (product: { id: string; name: string; default_price: number; company_id: string; companies?: { name: string } }) => {
-        if (currentItemIndex !== null) {
-            setOrderData(prev => ({
-                ...prev,
-                items: prev.items?.map((item, i) =>
-                    i === currentItemIndex ? {
-                        ...item,
-                        product: product.name,
-                        productId: product.id, // 정규화된 product_id 저장
-                        price: product.default_price || 0
-                    } : item
-                ) || []
-            }));
-        }
-        setCurrentItemIndex(null);
-    };
-
-    // 상품 선택 모달 열기
-    const openProductSelection = (index: number) => {
-        setCurrentItemIndex(index);
-        setShowProductModal(true);
-    };
-
-    // 폼 제출 핸들러
+    // =========================================================================
+    // 폼 제출
+    // =========================================================================
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -842,8 +681,9 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
 
         setIsSubmitting(true);
         try {
-            // 배송비가 포함된 항목 제거하고 순수 상품만 전달
-            const pureItems = orderData.items?.filter(item => item.product !== '배송비') || [];
+            const pureItems = isLegacyMode
+                ? (orderData.items?.filter(item => item.product !== '배송비') || [])
+                : groupsToOrderItems(productGroups);
 
             await onSubmit({
                 ...orderData,
@@ -859,6 +699,16 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         }
     };
 
+    // =========================================================================
+    // 아이템 개수 (레거시/계층 공통)
+    // =========================================================================
+    const itemCount = isLegacyMode
+        ? (orderData.items?.length || 0)
+        : productGroups.reduce((sum, g) => sum + g.variants.length, 0);
+
+    // =========================================================================
+    // 렌더링
+    // =========================================================================
     return (
         <div className="w-full">
             <form onSubmit={handleSubmit} className="flex flex-col h-full">
@@ -919,7 +769,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                             </div>
                         </div>
 
-                    {/* 주문 상품 테이블 섹션 */}
+                    {/* 주문 상품 섹션 */}
                     <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
                             <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
                                 <div className="flex justify-between items-center">
@@ -931,121 +781,95 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                             주문 상품
                                         </h3>
                                         <span className="ml-3 px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
-                                            {orderData.items?.length || 0}개 항목
+                                            {isLegacyMode
+                                                ? `${orderData.items?.length || 0}개 항목`
+                                                : `${productGroups.length}개 그룹 / ${itemCount}개 변형`
+                                            }
                                         </span>
                                     </div>
                                     <button
                                         type="button"
-                                        onClick={handleAddItem}
+                                        onClick={isLegacyMode ? handleAddItem : handleAddGroup}
                                         className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
                                     >
                                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                                         </svg>
-                                        상품 추가
+                                        {isLegacyMode ? '상품 추가' : '상품 그룹 추가'}
                                     </button>
                                 </div>
                             </div>
 
                             <div className="p-6">
-                                {orderData.items && orderData.items.length > 0 ? (
-                                    <DndContext
-                                        sensors={sensors}
-                                        collisionDetection={closestCenter}
-                                        onDragEnd={handleDragEnd}
-                                    >
-                                        <div className="overflow-x-auto max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg min-h-96">
-                                            {(() => {
-                                                const isLegacy = orderData.items?.some(item => !item.printingOption && (
-                                                    (item.smallPrintingQuantity ?? 0) > 0 ||
-                                                    (item.largePrintingQuantity ?? 0) > 0 ||
-                                                    (item.extraLargePrintingQuantity ?? 0) > 0
-                                                ));
-                                                const thClass = "border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-gray-100";
-                                                return (
-                                            <table className="w-full border-collapse border border-gray-300 dark:border-gray-600" style={{tableLayout: 'fixed', minWidth: isLegacy ? '1560px' : '1800px'}}>
-                                                <colgroup>
-                                                {isLegacy ? (
-                                                    <>
-                                                    <col style={{ width: '50px' }} /><col style={{ width: '200px' }} /><col style={{ width: '80px' }} /><col style={{ width: '100px' }} /><col style={{ width: '100px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '140px' }} /><col style={{ width: '120px' }} /><col style={{ width: '150px' }} /><col style={{ width: '140px' }} />
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                    <col style={{ width: '50px' }} /><col style={{ width: '200px' }} /><col style={{ width: '80px' }} /><col style={{ width: '100px' }} /><col style={{ width: '100px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '70px' }} /><col style={{ width: '70px' }} /><col style={{ width: '70px' }} /><col style={{ width: '70px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '150px' }} /><col style={{ width: '140px' }} />
-                                                    </>
-                                                )}
-                                            </colgroup>
-                                            <thead className="sticky top-0 bg-gray-100 dark:bg-gray-700 z-10">
-                                                <tr className="bg-gray-100 dark:bg-gray-700">
-                                                    <th className={thClass}>No.</th>
-                                                    <th className={thClass}>상품명</th>
-                                                    <th className={thClass}>수량</th>
-                                                    <th className={thClass}>사이즈</th>
-                                                    <th className={thClass}>색상</th>
-                                                    <th className={thClass}>의류 단가</th>
-                                                    {isLegacy ? (
-                                                        <>
-                                                            <th className={thClass}>커스텀인쇄</th>
-                                                            <th className={thClass}>대형인쇄</th>
-                                                            <th className={thClass}>개별단가</th>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <th className={thClass}>프린팅</th>
-                                                            <th className={thClass}>소형</th>
-                                                            <th className={thClass}>중형</th>
-                                                            <th className={thClass}>대형</th>
-                                                            <th className={thClass}>특대형</th>
-                                                            <th className={thClass}>개별단가</th>
-                                                        </>
-                                                    )}
-                                                    <th className={thClass}>단가</th>
-                                                    <th className={thClass}>총 금액</th>
-                                                    <th className={thClass}>비고</th>
-                                                    <th className={thClass}>관리</th>
-                                                </tr>
-                                            </thead>
-                                            <SortableContext
-                                                items={orderData.items?.map(item => item.id) || []}
-                                                strategy={verticalListSortingStrategy}
+                                {/* ================= 레거시 모드 ================= */}
+                                {isLegacyMode && (
+                                    <>
+                                        {orderData.items && orderData.items.length > 0 ? (
+                                            <OrderFormLegacyTable
+                                                items={orderData.items}
+                                                handleItemChange={handleItemChange}
+                                                handleSafeNumberChange={handleSafeNumberChange}
+                                                handleRemoveItem={handleRemoveItem}
+                                                handleCopyItem={handleCopyItem}
+                                                handleMoveItemUp={handleMoveItemUp}
+                                                handleMoveItemDown={handleMoveItemDown}
+                                                handleAddItem={handleAddItem}
+                                                openProductSelection={openProductSelectionForLegacy}
+                                                handleDragEnd={handleLegacyDragEnd}
+                                                sensors={sensors}
+                                                productSizes={productSizes}
+                                                productColors={productColors}
+                                                highlightedItems={highlightedItems}
+                                            />
+                                        ) : (
+                                            <EmptyState />
+                                        )}
+                                    </>
+                                )}
+
+                                {/* ================= 계층형 모드 ================= */}
+                                {!isLegacyMode && (
+                                    <>
+                                        {productGroups.length > 0 ? (
+                                            <DndContext
+                                                sensors={sensors}
+                                                collisionDetection={closestCenter}
+                                                onDragEnd={handleGroupDragEnd}
                                             >
-                                                <tbody>
-                                                    {orderData.items.map((item, index) => (
-                                                            <SortableRow
-                                                                key={item.id || index}
-                                                                item={item}
-                                                                index={index}
-                                                                handleItemChange={handleItemChange}
-                                                                handleSafeNumberChange={handleSafeNumberChange}
-                                                                handleRemoveItem={handleRemoveItem}
-                                                                handleCopyItem={handleCopyItem}
-                                                                handleMoveItemUp={handleMoveItemUp}
-                                                                handleMoveItemDown={handleMoveItemDown}
-                                                                openProductSelection={openProductSelection}
-                                                                calculateUnitPrice={calculateUnitPrice}
-                                                                calculateItemTotal={calculateItemTotal}
-                                                                totalQuantity={orderData.items?.reduce((sum, i) => sum + Math.max(0, Number(i.quantity) || 0), 0) || 0}
-                                                                highlightedItems={highlightedItems}
-                                                                orderItemsLength={orderData.items?.length || 0}
-                                                                productSizes={productSizes}
-                                                                productColors={productColors}
-                                                            />
+                                                <SortableContext
+                                                    items={productGroups.map(g => g.id)}
+                                                    strategy={verticalListSortingStrategy}
+                                                >
+                                                    {productGroups.map((group, groupIndex) => (
+                                                        <ProductGroupCard
+                                                            key={group.id}
+                                                            group={group}
+                                                            groupIndex={groupIndex}
+                                                            totalQuantity={totalQuantity}
+                                                            isExpanded={expandedGroups.has(group.id)}
+                                                            onToggle={() => handleToggleGroup(group.id)}
+                                                            onGroupChange={(field, value) => handleGroupChange(groupIndex, field, value)}
+                                                            onVariantChange={(variantIndex, field, value) => handleVariantChange(groupIndex, variantIndex, field, value)}
+                                                            onAddVariant={() => handleAddVariant(groupIndex)}
+                                                            onRemoveVariant={(variantIndex) => handleRemoveVariant(groupIndex, variantIndex)}
+                                                            onPrintingConfigChange={(pIndex, field, value) => handlePrintingConfigChange(groupIndex, pIndex, field, value)}
+                                                            onAddPrinting={() => handleAddPrinting(groupIndex)}
+                                                            onRemovePrinting={(pIndex) => handleRemovePrinting(groupIndex, pIndex)}
+                                                            onCustomPricingChange={(field, value) => handleCustomPricingChange(groupIndex, field, value)}
+                                                            onCopyGroup={() => handleCopyGroup(groupIndex)}
+                                                            onRemoveGroup={() => handleRemoveGroup(groupIndex)}
+                                                            openProductSelection={() => openProductSelectionForGroup(groupIndex)}
+                                                            productSizes={productSizes}
+                                                            productColors={productColors}
+                                                            groupSubtotal={calculateGroupSubtotal(group, totalQuantity)}
+                                                        />
                                                     ))}
-                                                </tbody>
-                                            </SortableContext>
-                                        </table>
-                                                );
-                                            })()}
-                                    </div>
-                                </DndContext>
-                                ) : (
-                                    <div className="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
-                                        <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                        </svg>
-                                        <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">등록된 상품이 없습니다</p>
-                                        <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">상품 추가 버튼을 클릭하여 상품을 등록하세요</p>
-                                    </div>
+                                                </SortableContext>
+                                            </DndContext>
+                                        ) : (
+                                            <EmptyState />
+                                        )}
+                                    </>
                                 )}
 
                                 {/* 금액 정보 섹션 */}
@@ -1066,7 +890,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                     value={shippingFee}
                                                     onChange={(e) => {
                                                         setShippingFee(parseInt(e.target.value) || 0);
-                                                        setAutoShipping(false); // 수동 입력 시 자동 계산 해제
+                                                        setAutoShipping(false);
                                                     }}
                                                     min="0"
                                                     step="100"
@@ -1204,6 +1028,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                 onClose={() => {
                     setShowProductModal(false);
                     setCurrentItemIndex(null);
+                    setCurrentGroupIndex(null);
                 }}
                 onSelect={handleProductSelect}
             />
@@ -1213,7 +1038,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                 .drag-handle {
                     touch-action: none;
                 }
-                
+
                 .drag-handle:active {
                     cursor: grabbing !important;
                 }
@@ -1230,6 +1055,19 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                     }
                 }
             `}</style>
+        </div>
+    );
+}
+
+// 빈 상태 컴포넌트
+function EmptyState() {
+    return (
+        <div className="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+            <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+            <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">등록된 상품이 없습니다</p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">상품 추가 버튼을 클릭하여 상품을 등록하세요</p>
         </div>
     );
 }

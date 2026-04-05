@@ -128,6 +128,7 @@ export default function AnalyticsPage() {
                     medium_print_count?: number;
                     large_print_count?: number;
                     extra_large_print_count?: number;
+                    printing_configs?: string | null;
                     remarks?: string;
                 }) => {
                     const productInfo = item.product as { id?: string; name?: string; default_price?: number; wholesale_price?: number } | undefined;
@@ -150,6 +151,7 @@ export default function AnalyticsPage() {
                         mediumPrintCount: Number(item.medium_print_count) || 0,
                         largePrintCount: Number(item.large_print_count) || 0,
                         extraLargePrintCount: Number(item.extra_large_print_count) || 0,
+                        printingConfigs: item.printing_configs ? (typeof item.printing_configs === 'string' ? JSON.parse(item.printing_configs) : item.printing_configs) : undefined,
                         remarks: item.remarks || '-',
                         productInfo: productInfo?.id ? productInfo : undefined
                     };

@@ -105,6 +105,42 @@ export const getPrintingUnitPrice = (
 };
 
 // =============================================================================
+// PRODUCT GROUP TYPES (계층형 UI용)
+// =============================================================================
+
+// 사이즈/색상 변형
+export interface ProductVariant {
+    id: string;
+    quantity: number;
+    size: string;
+    color: string;
+    remarks?: string;
+}
+
+// 프린팅 설정 (한 옷에 여러 프린팅 가능)
+export interface PrintingConfig {
+    id: string;
+    printingOption: PrintingOption;
+    smallPrintCount: number;
+    mediumPrintCount: number;
+    largePrintCount: number;
+    extraLargePrintCount: number;
+}
+
+// 상품 그룹 (계층형 주문 입력용)
+export interface ProductGroup {
+    id: string;
+    product: string;
+    productId?: string;
+    price: number;
+    variants: ProductVariant[];
+    printings: PrintingConfig[]; // 복수 프린팅 지원
+    // 개별단가
+    extraLargePrintingQuantity: number;
+    extraLargePrintingPrice: number;
+}
+
+// =============================================================================
 // ORDER TYPES
 // =============================================================================
 
@@ -130,12 +166,14 @@ export interface OrderItem {
     extraLargePrintingPrice?: number;
     designWorkQuantity?: number;
     designWorkPrice?: number;
-    // 새 프린팅 필드
+    // 새 프린팅 필드 (단일 - 레거시 호환)
     printingOption?: PrintingOption | null;
     smallPrintCount?: number;
     mediumPrintCount?: number;
     largePrintCount?: number;
     extraLargePrintCount?: number;
+    // 복수 프린팅 (JSON)
+    printingConfigs?: PrintingConfig[];
     productInfo?: ProductInfo; // 정규화된 제품 정보
     remarks?: string; // 비고 필드 추가
 }
