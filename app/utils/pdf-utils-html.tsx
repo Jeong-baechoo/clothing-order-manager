@@ -7,12 +7,12 @@ export const generateInvoiceHTML = (order: Order): string => {
   console.log('generateInvoiceHTML - shippingFee:', order.shippingFee); // 디버깅용
 
   // Calculate totals using the shared calculation logic
-  const itemsTotal = order.items.reduce((sum, item) => sum + calculateItemTotal(item), 0);
+  const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
+  const itemsTotal = order.items.reduce((sum, item) => sum + calculateItemTotal(item, totalQuantity), 0);
   const shippingFee = Number(order.shippingFee) || 0;
   const grandTotal = itemsTotal + shippingFee;
   const vat = Math.round(grandTotal * 0.1);
   const totalWithVat = grandTotal + vat;
-  const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
   // 상품 개수에 따른 동적 간격 계산 (단일 페이지 최적화)
   const itemCount = order.items.length;
@@ -46,8 +46,8 @@ export const generateInvoiceHTML = (order: Order): string => {
         <div class="col-product">${item.product}</div>
         <div class="col-size">${item.size} / ${item.color}</div>
         <div class="col-quantity">${item.quantity}</div>
-        <div class="col-price">${calculateUnitPrice(item).toLocaleString()}</div>
-        <div class="col-amount">${calculateItemTotal(item).toLocaleString()}</div>
+        <div class="col-price">${calculateUnitPrice(item, totalQuantity).toLocaleString()}</div>
+        <div class="col-amount">${calculateItemTotal(item, totalQuantity).toLocaleString()}</div>
         <div class="col-remarks">${item.remarks || ''}</div>
       </div>
     `;

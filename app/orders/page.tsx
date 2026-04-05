@@ -213,6 +213,7 @@ const OrdersPage: React.FC = () => {
                         mediumPrintCount: item.medium_print_count || 0,
                         largePrintCount: item.large_print_count || 0,
                         extraLargePrintCount: item.extra_large_print_count || 0,
+                        printingConfigs: item.printing_configs ? (typeof item.printing_configs === 'string' ? JSON.parse(item.printing_configs) : item.printing_configs) : undefined,
                         remarks: item.remarks || '-',
                         productInfo: item.product?.id ? item.product : undefined
                     }))
@@ -288,6 +289,7 @@ const OrdersPage: React.FC = () => {
                         mediumPrintCount: item.medium_print_count || 0,
                         largePrintCount: item.large_print_count || 0,
                         extraLargePrintCount: item.extra_large_print_count || 0,
+                        printingConfigs: item.printing_configs ? (typeof item.printing_configs === 'string' ? JSON.parse(item.printing_configs) : item.printing_configs) : undefined,
                         remarks: item.remarks || '-',
                         productInfo: item.product?.id ? item.product : undefined
                     }))
