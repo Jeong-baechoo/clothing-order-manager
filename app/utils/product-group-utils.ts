@@ -15,15 +15,39 @@ export function isLegacyOrder(items: OrderItem[]): boolean {
 }
 
 /**
+ * 프린팅 설정으로부터 그룹핑 키 생성 (제품+프린팅을 하나의 단위로 봄)
+ */
+function getPrintingKey(item: OrderItem): string {
+    if (item.printingConfigs && item.printingConfigs.length > 0) {
+        const sorted = [...item.printingConfigs].sort((a, b) =>
+            a.printingOption.localeCompare(b.printingOption)
+        );
+        return JSON.stringify(sorted.map(c => ({
+            o: c.printingOption,
+            s: c.smallPrintCount || 0,
+            m: c.mediumPrintCount || 0,
+            l: c.largePrintCount || 0,
+            xl: c.extraLargePrintCount || 0,
+        })));
+    }
+    if (item.printingOption) {
+        return `${item.printingOption}-${item.smallPrintCount || 0}-${item.mediumPrintCount || 0}-${item.largePrintCount || 0}-${item.extraLargePrintCount || 0}`;
+    }
+    return 'none';
+}
+
+/**
  * OrderItem[] → ProductGroup[] 변환 (편집 시 사용)
  * printingConfigs JSON이 있으면 그대로 사용, 없으면 단일 printingOption에서 복원
  */
 export function orderItemsToGroups(items: OrderItem[]): ProductGroup[] {
-    // productId(또는 상품명) + price 기준으로 그룹핑
+    // productId(또는 상품명) + price + 프린팅설정 기준으로 그룹핑
     const groupMap = new Map<string, { items: OrderItem[], printings: PrintingConfig[] }>();
 
     for (const item of items) {
-        const key = `${item.productId || item.product}-${item.price}`;
+        const printKey = getPrintingKey(item);
+        const customKey = `${item.extraLargePrintingQuantity || 0}-${item.extraLargePrintingPrice || 0}`;
+        const key = `${item.productId || item.product}-${item.price}-${printKey}-${customKey}`;
 
         if (!groupMap.has(key)) {
             // 프린팅 복원: printingConfigs가 있으면 사용, 없으면 단일 printingOption에서 생성
