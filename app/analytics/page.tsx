@@ -91,7 +91,7 @@ export default function AnalyticsPage() {
             setLoading(true);
 
             // 주문 데이터 로드 (완료된 주문 포함, 제품 정보는 조인으로 함께 가져옴)
-            const orderData = await getOrders(true);
+            const orderData = await getOrders();
 
             // 개선된 스키마에 맞게 주문 데이터 변환 (안전한 변환)
             const transformedOrders = orderData.map(order => ({

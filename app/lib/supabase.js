@@ -22,7 +22,7 @@ export const supabase = createClient(supabaseUrl || '', supabaseKey || '', {
 });
 
 // 주문 관련 함수들
-export async function getOrders(includeCompleted = false) {
+export async function getOrders() {
   let query = supabase
     .from('orders')
     .select(`
@@ -37,11 +37,6 @@ export async function getOrders(includeCompleted = false) {
         )
       )
     `);
-
-  // includeCompleted가 false인 경우 완료된 주문 제외
-  if (!includeCompleted) {
-    query = query.neq('status', 'completed');
-  }
 
   const { data, error } = await query.order('order_date', { ascending: false });
 

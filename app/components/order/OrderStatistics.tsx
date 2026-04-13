@@ -20,7 +20,7 @@ export default function OrderStatistics({ orders }: OrderStatisticsProps) {
                 const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
                 // 완료 주문 포함 전체 주문 가져오기
-                const allOrders = await getOrders(true);
+                const allOrders = await getOrders();
 
                 // 현재 월 주문만 필터링
                 const monthOrders = allOrders.filter(order =>

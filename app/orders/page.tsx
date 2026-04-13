@@ -57,6 +57,7 @@ const OrdersPage: React.FC = () => {
     const [currentOrder, setCurrentOrder] = useState<Partial<Order> | null>(null);
     const [loading, setLoading] = useState(true);
     const [showCompleted, setShowCompleted] = useState(false);
+    const [showHold, setShowHold] = useState(false);
 
     // 삭제 확인 대화상자 상태
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -71,7 +72,7 @@ const OrdersPage: React.FC = () => {
         async function loadOrders() {
             setLoading(true);
             try {
-                const ordersData = await getOrders(showCompleted);
+                const ordersData = await getOrders();
                 console.log('첫 번째 주문 원본 데이터:', ordersData[0]); // 디버깅용 로그
                 if (ordersData.length > 0) {
                     // Supabase에서 받은 데이터를 애플리케이션 형식으로 변환
@@ -129,7 +130,7 @@ const OrdersPage: React.FC = () => {
         }
 
         loadOrders();
-    }, [showCompleted]);
+    }, []);
 
     // 주문 검색 및 필터링
     const filteredOrders = orders.filter((order) => {
@@ -144,6 +145,17 @@ const OrdersPage: React.FC = () => {
 
         const matchesStatus = selectedStatus === 'all' || order.status === selectedStatus;
 
+        // 체크박스가 켜져있으면 해당 상태만 표시
+        if (showHold || showCompleted) {
+            const isVisibleStatus =
+                (showHold && order.status === 'hold') ||
+                (showCompleted && order.status === 'completed');
+            return matchesSearchTerm && matchesStatus && isVisibleStatus;
+        }
+
+        // 기본: 보류/완료 숨김
+        if (order.status === 'hold' || order.status === 'completed') return false;
+
         return matchesSearchTerm && matchesStatus;
     });
 
@@ -157,7 +169,7 @@ const OrdersPage: React.FC = () => {
             const yearMonth = `${year}${month}`;
             
             // 데이터베이스에서 해당 월의 모든 주문 ID 가져오기
-            const allOrders = await getOrders(true); // 완료된 주문도 포함
+            const allOrders = await getOrders(); // 완료된 주문도 포함
             const monthOrders = allOrders.filter(order => order.id.startsWith(`${yearMonth}-`));
             
             const maxOrderNumber = monthOrders.reduce((max, order) => {
@@ -182,7 +194,7 @@ const OrdersPage: React.FC = () => {
 
             if (result.success) {
                 // DB에서 최신 데이터 다시 불러오기
-                const updatedOrders = await getOrders(showCompleted);
+                const updatedOrders = await getOrders();
                 const formattedOrders = updatedOrders.map(order => ({
                     id: order.id,
                     customerName: order.customer_name,
@@ -258,7 +270,7 @@ const OrdersPage: React.FC = () => {
 
             if (result.success) {
                 // DB에서 최신 데이터 다시 불러오기
-                const updatedOrders = await getOrders(showCompleted);
+                const updatedOrders = await getOrders();
                 const formattedOrders = updatedOrders.map(order => ({
                     id: order.id,
                     customerName: order.customer_name,
@@ -486,11 +498,23 @@ const OrdersPage: React.FC = () => {
                             <option value="paid">입금완료</option>
                             <option value="printing_request">프린팅요청</option>
                             <option value="processing">작업중</option>
-                            <option value="hold">보류</option>
+                            {showHold && <option value="hold">보류</option>}
                             {showCompleted && <option value="completed">완료</option>}
                         </select>
                     </div>
                     <div className="w-full md:w-auto flex items-end gap-4">
+                        <div className="flex items-center">
+                            <input
+                                type="checkbox"
+                                id="showHold"
+                                checked={showHold}
+                                onChange={(e) => setShowHold(e.target.checked)}
+                                className="mr-2 h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                            />
+                            <label htmlFor="showHold" className="text-sm text-gray-700 dark:text-gray-300">
+                                보류 주문 표시
+                            </label>
+                        </div>
                         <div className="flex items-center">
                             <input
                                 type="checkbox"
