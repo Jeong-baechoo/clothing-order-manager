@@ -16,6 +16,7 @@ interface ProductGroupCardProps {
     onGroupChange: (field: string, value: string | number) => void;
     onVariantChange: (variantIndex: number, field: keyof ProductVariant, value: string | number) => void;
     onAddVariant: () => void;
+    onCopyVariant: (variantIndex: number) => void;
     onRemoveVariant: (variantIndex: number) => void;
     onPrintingConfigChange: (printingIndex: number, field: string, value: string | number) => void;
     onAddPrinting: () => void;
@@ -38,6 +39,7 @@ export default function ProductGroupCard({
     onGroupChange,
     onVariantChange,
     onAddVariant,
+    onCopyVariant,
     onRemoveVariant,
     onPrintingConfigChange,
     onAddPrinting,
@@ -215,7 +217,7 @@ export default function ProductGroupCard({
                                 <div className="w-28">사이즈</div>
                                 <div className="w-28">색상</div>
                                 <div className="flex-1 min-w-0">비고</div>
-                                <div className="w-8"></div>
+                                <div className="w-16"></div>
                             </div>
                             {group.variants.map((variant, variantIndex) => (
                                 <VariantRow
@@ -223,6 +225,7 @@ export default function ProductGroupCard({
                                     variant={variant}
                                     index={variantIndex}
                                     onChange={onVariantChange}
+                                    onCopy={onCopyVariant}
                                     onRemove={onRemoveVariant}
                                     canRemove={group.variants.length > 1}
                                     productSizes={productSizes}

@@ -7,6 +7,7 @@ interface VariantRowProps {
     variant: ProductVariant;
     index: number;
     onChange: (index: number, field: keyof ProductVariant, value: string | number) => void;
+    onCopy: (index: number) => void;
     onRemove: (index: number) => void;
     canRemove: boolean;
     productSizes: string[];
@@ -17,6 +18,7 @@ export default function VariantRow({
     variant,
     index,
     onChange,
+    onCopy,
     onRemove,
     canRemove,
     productSizes,
@@ -83,6 +85,17 @@ export default function VariantRow({
                 />
             </div>
 
+            {/* 복사 버튼 */}
+            <button
+                type="button"
+                onClick={() => onCopy(index)}
+                className="flex-shrink-0 p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
+                title="변형 복사"
+            >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                </svg>
+            </button>
             {/* 삭제 버튼 */}
             <button
                 type="button"

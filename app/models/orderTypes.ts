@@ -145,7 +145,7 @@ export interface ProductGroup {
 // =============================================================================
 
 // 주문 상태 타입
-export type OrderStatus = 'pending' | 'paid' | 'printing_request' | 'processing' | 'completed';
+export type OrderStatus = 'pending' | 'paid' | 'printing_request' | 'processing' | 'completed' | 'hold';
 
 // 결제 방법 타입
 export type PaymentMethod = '신용카드' | '무통장입금' | '계좌이체' | '현금' | '기타';
@@ -199,7 +199,8 @@ export const orderStatusMap = {
     paid: '입금완료',
     printing_request: '프린팅요청',
     processing: '작업중',
-    completed: '완료'
+    completed: '완료',
+    hold: '보류'
 };
 
 // 주문 상태에 따른 배경색 지정
@@ -215,6 +216,8 @@ export const getStatusColor = (status: string) => {
             return 'bg-blue-100 text-blue-800';
         case 'completed':
             return 'bg-green-100 text-green-800';
+        case 'hold':
+            return 'bg-red-100 text-red-800';
         default:
             return 'bg-gray-100 text-gray-800';
     }

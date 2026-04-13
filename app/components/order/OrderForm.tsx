@@ -433,6 +433,21 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         }));
     }, []);
 
+    const handleCopyVariant = useCallback((groupIndex: number, variantIndex: number) => {
+        setProductGroups(prev => prev.map((g, i) => {
+            if (i !== groupIndex) return g;
+            const source = g.variants[variantIndex];
+            if (!source) return g;
+            const copy = {
+                ...source,
+                id: `variant-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            };
+            const newVariants = [...g.variants];
+            newVariants.splice(variantIndex + 1, 0, copy);
+            return { ...g, variants: newVariants };
+        }));
+    }, []);
+
     const handleRemoveVariant = useCallback((groupIndex: number, variantIndex: number) => {
         setProductGroups(prev => prev.map((g, i) => {
             if (i !== groupIndex) return g;
@@ -851,6 +866,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                             onGroupChange={(field, value) => handleGroupChange(groupIndex, field, value)}
                                                             onVariantChange={(variantIndex, field, value) => handleVariantChange(groupIndex, variantIndex, field, value)}
                                                             onAddVariant={() => handleAddVariant(groupIndex)}
+                                                            onCopyVariant={(variantIndex) => handleCopyVariant(groupIndex, variantIndex)}
                                                             onRemoveVariant={(variantIndex) => handleRemoveVariant(groupIndex, variantIndex)}
                                                             onPrintingConfigChange={(pIndex, field, value) => handlePrintingConfigChange(groupIndex, pIndex, field, value)}
                                                             onAddPrinting={() => handleAddPrinting(groupIndex)}
