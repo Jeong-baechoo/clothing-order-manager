@@ -45,7 +45,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
         items: [],
     });
 
-    const [shippingFee, setShippingFee] = useState<number>(3500);
+    const [shippingFee, setShippingFee] = useState<number>(4000);
     const [autoShipping, setAutoShipping] = useState<boolean>(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showProductModal, setShowProductModal] = useState(false);
@@ -161,7 +161,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
     useEffect(() => {
         if (autoShipping) {
             if (totalPrice < 100000 && totalPrice > 0) {
-                setShippingFee(3500);
+                setShippingFee(4000);
             } else {
                 setShippingFee(0);
             }
@@ -925,7 +925,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                                 className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                             />
                                             <label htmlFor="autoShipping" className="text-gray-600 dark:text-gray-400">
-                                                자동 계산 (100,000원 미만 주문 시 3,500원)
+                                                자동 계산 (100,000원 미만 주문 시 4,000원)
                                             </label>
                                         </div>
                                     </div>

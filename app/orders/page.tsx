@@ -599,7 +599,27 @@ const OrdersPage: React.FC = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                            {order.orderDate}
+                                            <div className="flex items-center gap-2">
+                                                <span>{order.orderDate}</span>
+                                                {order.status !== 'completed' && order.status !== 'hold' && (() => {
+                                                    const orderDate = new Date(order.orderDate);
+                                                    const today = new Date();
+                                                    today.setHours(0, 0, 0, 0);
+                                                    orderDate.setHours(0, 0, 0, 0);
+                                                    const deadline = new Date(orderDate);
+                                                    deadline.setDate(deadline.getDate() + 5);
+                                                    const remaining = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                                                    const label = remaining > 0 ? `D-${remaining}` : remaining === 0 ? 'D-Day' : `D+${Math.abs(remaining)}`;
+                                                    const color = remaining > 0
+                                                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                                                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+                                                    return (
+                                                        <span className={`px-1.5 py-0.5 text-xs font-semibold rounded ${color}`}>
+                                                            {label}
+                                                        </span>
+                                                    );
+                                                })()}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div className="flex space-x-2">
