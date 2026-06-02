@@ -991,7 +991,9 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                             <option value="pending">대기중</option>
                                             <option value="paid">입금완료</option>
                                             <option value="printing_request">프린팅요청</option>
+                                            <option value="printing_complete">프린팅완료</option>
                                             <option value="processing">작업중</option>
+                                            <option value="priority">우선작업</option>
                                             <option value="completed">완료</option>
                                         </select>
                                     </div>
