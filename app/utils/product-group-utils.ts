@@ -6,10 +6,14 @@ import { calculateItemTotal } from './order-calculations';
  */
 export function isLegacyOrder(items: OrderItem[]): boolean {
     return items.some(item =>
-        !item.printingOption && (
+        !item.printingOption &&
+        !(item.printingConfigs && item.printingConfigs.length > 0) &&
+        (
+            // extraLargePrintingQuantity는 신규 폼의 '개별단가'와 의미가 겹치므로 레거시 판정에서 제외.
+            // 디자인작업(designWorkQuantity)은 레거시 전용 신호라 포함하여 진짜 옛 주문은 계속 레거시로 인식.
             (item.smallPrintingQuantity ?? 0) > 0 ||
             (item.largePrintingQuantity ?? 0) > 0 ||
-            (item.extraLargePrintingQuantity ?? 0) > 0
+            (item.designWorkQuantity ?? 0) > 0
         )
     );
 }

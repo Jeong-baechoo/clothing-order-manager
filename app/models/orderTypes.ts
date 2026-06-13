@@ -284,3 +284,87 @@ export const initialOrders: Order[] = [
         ]
     }
 ];
+
+// =============================================================================
+// B2B 발주 모듈 타입 (specs/001-b2b-order-module)
+// =============================================================================
+
+// 발주처 (우리한테 발주하는 외부 업체 — companies(공급처)와는 별개)
+export interface Buyer {
+    id: string;
+    name: string;
+    loginEmail: string;
+    authUserId?: string | null;
+    active: boolean;
+    createdAt?: string;
+}
+
+// 변형(사이즈·색상)별 재고
+export interface ProductInventory {
+    id: string;
+    productId: string;
+    size: string;
+    color: string;
+    stockQty: number;
+    remarks?: string;
+}
+
+// 발주 상태
+export type PurchaseOrderStatus = 'requested' | 'confirmed' | 'shipped' | 'done' | 'canceled';
+
+// 관리자(수주처) 관점 상태 라벨
+export const purchaseOrderStatusMap: Record<PurchaseOrderStatus, string> = {
+    requested: '신청',
+    confirmed: '확정',
+    shipped: '출고',
+    done: '완료',
+    canceled: '취소',
+};
+
+// 발주처(수요자) 관점 상태 라벨 — '확정/출고/완료' 대신 '접수/배송/도착'
+export const buyerOrderStatusMap: Record<PurchaseOrderStatus, string> = {
+    requested: '신청',
+    confirmed: '접수',
+    shipped: '배송',
+    done: '도착',
+    canceled: '취소',
+};
+
+// 발주 라인 (완성품 — 프린팅 없음, 발주 시점 스냅샷)
+export interface PurchaseOrderItem {
+    id: string;
+    inventoryId?: string;
+    productId?: string;
+    productName?: string;
+    size?: string;
+    color?: string;
+    quantity: number;
+    unitPrice: number;
+    remarks?: string;
+}
+
+// 발주 헤더
+export interface PurchaseOrder {
+    id: string;
+    poNo?: string;
+    buyerId: string;
+    status: PurchaseOrderStatus;
+    totalPrice: number;
+    note?: string;
+    createdAt?: string;
+    confirmedAt?: string | null;
+    items?: PurchaseOrderItem[];
+}
+
+// 발주처 포털 카탈로그 행 (제품 변형 + 재고)
+export interface CatalogRow {
+    productId: string;
+    productName: string;
+    defaultPrice: number;
+    wholesalePrice: number;
+    inventoryId: string;
+    size: string;
+    color: string;
+    stockQty: number;
+    remarks?: string;
+}

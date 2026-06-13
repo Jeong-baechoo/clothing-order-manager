@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "./components/layout/Navbar";
+import AppChrome from "./components/layout/AppChrome";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "의류 주문 관리",
-  description: "의류 주문을 관리하는 애플리케이션",
+  title: "케룸 온라인 수발주 통합관리 시스템",
+  description: "CAELUM Online Purchase and Sale Order System",
 };
 
 export default function RootLayout({
@@ -40,10 +40,7 @@ export default function RootLayout({
             zIndex: 0
           }}
         />
-        <Navbar />
-        <main className="container mx-auto px-4 py-8 relative">
-          {children}
-        </main>
+        <AppChrome>{children}</AppChrome>
       </body>
     </html>
   );
