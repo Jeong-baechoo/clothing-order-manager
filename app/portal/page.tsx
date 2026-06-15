@@ -8,7 +8,7 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import RequireRole from '../components/auth/RequireRole';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import PurchaseOrderDetailModal from '../components/b2b/PurchaseOrderDetailModal';
-import { getMyCatalog, placePurchaseOrder, getPurchaseOrders } from '../lib/b2b';
+import { getMyCatalog, placePurchaseOrder, getPurchaseOrders, cancelMyPurchaseOrder } from '../lib/b2b';
 import { getSessionInfo } from '../lib/auth';
 import { buyerOrderStatusMap, compareVariant, type CatalogRow, type PurchaseOrder, type PurchaseOrderStatus } from '../models/orderTypes';
 
@@ -63,6 +63,7 @@ function PortalInner() {
     const [submitting, setSubmitting] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [detailOrder, setDetailOrder] = useState<PurchaseOrder | null>(null);
+    const [cancelTarget, setCancelTarget] = useState<PurchaseOrder | null>(null);
     const [toast, setToast] = useState<{ kind: 'success' | 'error'; msg: string } | null>(null);
     const [view, setView] = useState<View>('create');
     const [pickerOpen, setPickerOpen] = useState(false);
@@ -144,6 +145,16 @@ function PortalInner() {
         if (!r.success) { showToast('error', '발주 신청에 실패했습니다. 재고를 확인해주세요.'); return; }
         showToast('success', '발주가 신청되었습니다.');
         setQty({}); setNote(''); setLineRemarks({}); loadOrders();
+    };
+
+    const doCancel = async () => {
+        if (!cancelTarget) return;
+        const target = cancelTarget;
+        setCancelTarget(null);
+        const r = await cancelMyPurchaseOrder(target.id);
+        if (!r.success) { showToast('error', '발주 취소에 실패했습니다. 이미 접수되었을 수 있습니다.'); loadOrders(); return; }
+        showToast('success', '발주가 취소되었습니다.');
+        loadOrders();
     };
 
     const filteredOrders = useMemo(() => {
@@ -392,6 +403,14 @@ function PortalInner() {
                                             <div className="flex items-center gap-3">
                                                 <span className="text-slate-400">{o.createdAt ? o.createdAt.slice(0, 10) : ''}</span>
                                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusBadge[o.status]}`}>{buyerOrderStatusMap[o.status]}</span>
+                                                {o.status === 'requested' && (
+                                                    <button
+                                                        onClick={e => { e.stopPropagation(); setCancelTarget(o); }}
+                                                        onKeyDown={e => e.stopPropagation()}
+                                                        className="text-xs px-2 py-0.5 rounded border border-slate-200 dark:border-slate-600 text-slate-500 hover:text-red-600 hover:border-red-300 dark:hover:border-red-700 transition-colors">
+                                                        발주 취소
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="text-slate-600 dark:text-slate-300 mt-1.5">
@@ -463,6 +482,17 @@ function PortalInner() {
                 cancelText="취소"
                 onConfirm={doSubmit}
                 onCancel={() => setConfirmOpen(false)}
+            />
+
+            <ConfirmDialog
+                isOpen={!!cancelTarget}
+                variant="danger"
+                title="발주 취소"
+                message={`${cancelTarget?.poNo ?? ''} 발주를 취소할까요? 신청 단계에서만 취소되며, 되돌릴 수 없습니다.`}
+                confirmText="발주 취소"
+                cancelText="닫기"
+                onConfirm={doCancel}
+                onCancel={() => setCancelTarget(null)}
             />
 
             <PurchaseOrderDetailModal order={detailOrder} onClose={() => setDetailOrder(null)} />

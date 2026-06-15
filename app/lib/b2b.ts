@@ -275,6 +275,13 @@ export async function getPurchaseOrders(): Promise<PurchaseOrder[]> {
     return (data as PORow[]).map(toPurchaseOrder);
 }
 
+// 발주처 본인 발주 취소 — 신청(requested) 상태만 (cancel_my_purchase_order RPC)
+export async function cancelMyPurchaseOrder(poId: string): Promise<{ success: boolean; error?: unknown }> {
+    const { error } = await supabase.rpc('cancel_my_purchase_order', { p_po: poId });
+    if (error) { console.error('발주 취소 오류:', error); return { success: false, error }; }
+    return { success: true };
+}
+
 // 발주 접수(확정) — 원자적 재고 차감 (관리자)
 export async function confirmPurchaseOrder(poId: string): Promise<{ success: boolean; error?: unknown }> {
     const { error } = await supabase.rpc('confirm_purchase_order', { p_po: poId });
