@@ -11,38 +11,9 @@ if (!supabaseUrl || !supabaseKey) {
   console.error('Supabase URL 또는 API 키가 설정되지 않았습니다. .env.local 파일을 확인하세요.');
 }
 
-// 자동로그인(로그인 상태 유지) 토글용 세션 저장소 어댑터.
-// REMEMBER_KEY !== 'false'(기본): localStorage → 브라우저 재시작 후에도 세션 유지
-// REMEMBER_KEY === 'false': sessionStorage → 브라우저(탭) 닫으면 로그아웃
-export const REMEMBER_KEY = 'sb-remember';
-
-const hybridAuthStorage = {
-  getItem: (key) => {
-    if (typeof window === 'undefined') return null;
-    return window.localStorage.getItem(key) ?? window.sessionStorage.getItem(key);
-  },
-  setItem: (key, value) => {
-    if (typeof window === 'undefined') return;
-    const remember = window.localStorage.getItem(REMEMBER_KEY) !== 'false';
-    if (remember) {
-      window.sessionStorage.removeItem(key);
-      window.localStorage.setItem(key, value);
-    } else {
-      window.localStorage.removeItem(key);
-      window.sessionStorage.setItem(key, value);
-    }
-  },
-  removeItem: (key) => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.removeItem(key);
-    window.sessionStorage.removeItem(key);
-  },
-};
-
-// 자동 타임스탬프 비활성화 + 세션 저장소(자동로그인 토글)
+// 세션은 기본 localStorage 에 저장(로그인 상태 유지). 로그아웃 시 supabase.auth.signOut()으로 정리.
 export const supabase = createClient(supabaseUrl || '', supabaseKey || '', {
   auth: {
-    storage: hybridAuthStorage,
     persistSession: true,
     autoRefreshToken: true,
   },

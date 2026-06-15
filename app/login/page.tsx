@@ -6,31 +6,32 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn, getSessionInfo, homePathForRole } from '../lib/auth';
 
+const SAVED_EMAIL_KEY = 'login-email';
+
 export default function LoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
-    const [checking, setChecking] = useState(true);
     const [remember, setRemember] = useState(true);
 
-    // 자동 로그인: 저장된 세션이 있으면 폼 없이 바로 자기 영역으로 진입
+    // 로그인 정보 저장: 저장해둔 이메일이 있으면 미리 채움 (자동 로그인은 하지 않음)
     useEffect(() => {
-        let active = true;
-        getSessionInfo().then(info => {
-            if (!active) return;
-            if (info?.role) { router.replace(homePathForRole(info.role)); return; }
-            setChecking(false);
-        });
-        return () => { active = false; };
-    }, [router]);
+        if (typeof window === 'undefined') return;
+        const saved = window.localStorage.getItem(SAVED_EMAIL_KEY);
+        if (saved) { setEmail(saved); setRemember(true); }
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
-        const result = await signIn(email.trim(), password, remember);
+        if (typeof window !== 'undefined') {
+            if (remember) window.localStorage.setItem(SAVED_EMAIL_KEY, email.trim());
+            else window.localStorage.removeItem(SAVED_EMAIL_KEY);
+        }
+        const result = await signIn(email.trim(), password);
         if (!result.success) {
             setError('로그인에 실패했습니다. 이메일/비밀번호를 확인해주세요.');
             setLoading(false);
@@ -44,10 +45,6 @@ export default function LoginPage() {
         }
         router.replace(homePathForRole(info.role));
     };
-
-    if (checking) {
-        return <div className="min-h-screen flex items-center justify-center text-gray-400 dark:text-gray-500">확인 중…</div>;
-    }
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
@@ -88,7 +85,7 @@ export default function LoginPage() {
                         onChange={(e) => setRemember(e.target.checked)}
                         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    자동 로그인 (로그인 상태 유지)
+                    로그인 정보 저장 (이메일 기억)
                 </label>
 
                 {error && <p className="text-sm text-red-600">{error}</p>}

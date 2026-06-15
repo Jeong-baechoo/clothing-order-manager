@@ -254,11 +254,11 @@ export async function getMyCatalog(): Promise<CatalogRow[]> {
 
 // 발주 신청 (발주처). 재고 차감은 관리자 접수 시점.
 export async function placePurchaseOrder(
-    items: { inventoryId: string; quantity: number }[],
+    items: { inventoryId: string; quantity: number; remarks?: string }[],
     note?: string,
 ): Promise<{ success: boolean; poId?: string; error?: unknown }> {
     const { data, error } = await supabase.rpc('place_purchase_order', {
-        p_items: items.map(i => ({ inventory_id: i.inventoryId, quantity: i.quantity })),
+        p_items: items.map(i => ({ inventory_id: i.inventoryId, quantity: i.quantity, remarks: i.remarks ?? null })),
         p_note: note ?? null,
     });
     if (error) { console.error('발주 신청 오류:', error); return { success: false, error }; }

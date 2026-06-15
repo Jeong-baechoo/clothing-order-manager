@@ -25,6 +25,7 @@ function sortSizes(arr: string[]): string[] {
         return ia - ib;
     });
 }
+const sizeRank = (s: string) => { const i = SIZE_ORDER.indexOf(s.toUpperCase()); return i < 0 ? 999 : i; };
 const uniq = (arr: string[]) => Array.from(new Set(arr));
 // 대소문자 무시 중복 제거. 앞에 오는 값(우선순위 높음)의 표기를 채택 → 'S'/'s'를 하나로.
 const dedupCI = (arr: string[]) => {
@@ -107,6 +108,11 @@ export default function VariantEditorModal({ product, allProducts, onClose, onSa
     const totalStock = inv.reduce((s, v) => s + v.stockQty, 0);
     const otherProducts = allProducts.filter(p => p.id !== product.id);
 
+    // 색상 → 사이즈 정렬: 매트릭스 색상 행 / 현재 변형 목록
+    const displayColors = useMemo(() => [...selColors].sort((a, b) => a.localeCompare(b, 'ko')), [selColors]);
+    const invSorted = useMemo(() => [...inv].sort((a, b) =>
+        a.color.localeCompare(b.color, 'ko') || sizeRank(a.size) - sizeRank(b.size) || a.size.localeCompare(b.size)), [inv]);
+
     const chip = (label: string, on: boolean, onClick: () => void) => (
         <button key={label} onClick={onClick}
             className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${on
@@ -142,21 +148,7 @@ export default function VariantEditorModal({ product, allProducts, onClose, onSa
                             )}
                         </div>
 
-                        {/* 사이즈 칩 */}
-                        <div>
-                            <span className="block text-[11px] text-gray-400 mb-1.5">사이즈</span>
-                            <div className="flex flex-wrap gap-1.5 items-center">
-                                {candSizes.map(s => chip(s, selSizes.includes(s), () => toggleSize(s)))}
-                                <span className="inline-flex items-center gap-1">
-                                    <input value={customSize} onChange={e => setCustomSize(e.target.value)}
-                                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustom('size'); } }}
-                                        placeholder="직접추가" className="w-20 px-2 py-1 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded text-xs" />
-                                    <button onClick={() => addCustom('size')} className="text-gray-400 hover:text-blue-600 text-sm">+</button>
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* 색상 칩 */}
+                        {/* 색상 칩 (1행) */}
                         <div>
                             <span className="block text-[11px] text-gray-400 mb-1.5">색상</span>
                             <div className="flex flex-wrap gap-1.5 items-center">
@@ -166,6 +158,20 @@ export default function VariantEditorModal({ product, allProducts, onClose, onSa
                                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustom('color'); } }}
                                         placeholder="직접추가" className="w-20 px-2 py-1 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded text-xs" />
                                     <button onClick={() => addCustom('color')} className="text-gray-400 hover:text-blue-600 text-sm">+</button>
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* 사이즈 칩 (2행) */}
+                        <div>
+                            <span className="block text-[11px] text-gray-400 mb-1.5">사이즈</span>
+                            <div className="flex flex-wrap gap-1.5 items-center">
+                                {candSizes.map(s => chip(s, selSizes.includes(s), () => toggleSize(s)))}
+                                <span className="inline-flex items-center gap-1">
+                                    <input value={customSize} onChange={e => setCustomSize(e.target.value)}
+                                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustom('size'); } }}
+                                        placeholder="직접추가" className="w-20 px-2 py-1 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded text-xs" />
+                                    <button onClick={() => addCustom('size')} className="text-gray-400 hover:text-blue-600 text-sm">+</button>
                                 </span>
                             </div>
                         </div>
@@ -181,7 +187,7 @@ export default function VariantEditorModal({ product, allProducts, onClose, onSa
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {selColors.map(c => (
+                                        {displayColors.map(c => (
                                             <tr key={c}>
                                                 <td className="p-1.5 text-gray-700 dark:text-gray-300 whitespace-nowrap">{c}</td>
                                                 {selSizes.map(s => (
@@ -214,14 +220,14 @@ export default function VariantEditorModal({ product, allProducts, onClose, onSa
                             <table className="w-full text-sm border-collapse">
                                 <thead>
                                     <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 bg-gray-50 dark:bg-gray-800">
-                                        <th className="py-2 px-3">사이즈</th><th className="px-2">색상</th><th className="px-2">재고</th><th className="px-2">비고</th><th className="px-3"></th>
+                                        <th className="py-2 px-3">색상</th><th className="px-2">사이즈</th><th className="px-2">재고</th><th className="px-2">비고</th><th className="px-3"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {inv.map(v => (
+                                    {invSorted.map(v => (
                                         <tr key={v.id} className={`border-b border-gray-100 dark:border-gray-800 last:border-0 ${v.stockQty === 0 ? 'bg-red-50/60 dark:bg-red-900/10' : ''}`}>
-                                            <td className="py-2 px-3 text-gray-900 dark:text-gray-100">{v.size}</td>
-                                            <td className="px-2 text-gray-700 dark:text-gray-300">{v.color}</td>
+                                            <td className="py-2 px-3 text-gray-900 dark:text-gray-100">{v.color}</td>
+                                            <td className="px-2 text-gray-700 dark:text-gray-300">{v.size}</td>
                                             <td className="px-2">
                                                 <input type="number" min="0" defaultValue={v.stockQty}
                                                     onBlur={async e => {

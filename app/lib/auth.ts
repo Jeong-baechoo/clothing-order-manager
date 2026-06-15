@@ -4,7 +4,7 @@
 // specs/001-b2b-order-module/  — 계정은 대시보드 수동 발급(provisioning.md)
 // RLS는 JWT app_metadata 의 role / buyer_id 를 사용한다(user_metadata는 신뢰하지 않음).
 
-import { supabase, REMEMBER_KEY } from './supabase';
+import { supabase } from './supabase';
 
 export type Role = 'admin' | 'buyer' | null;
 
@@ -31,18 +31,16 @@ export async function getSessionInfo(): Promise<SessionInfo | null> {
     };
 }
 
-export async function signIn(email: string, password: string, remember = true): Promise<{ success: boolean; error?: unknown }> {
-    // 자동로그인 토글을 세션 저장 직전에 기록 (supabase.js의 저장소 어댑터가 이 값을 읽어 분기)
-    if (typeof window !== 'undefined') {
-        window.localStorage.setItem(REMEMBER_KEY, remember ? 'true' : 'false');
-    }
+export async function signIn(email: string, password: string): Promise<{ success: boolean; error?: unknown }> {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) { console.error('로그인 오류:', error); return { success: false, error }; }
     return { success: true };
 }
 
 export async function signOut(): Promise<void> {
-    await supabase.auth.signOut();
+    // scope:'local' — 서버 호출 없이 로컬 세션만 정리(네트워크 지연/실패로 로그아웃이 막히지 않게).
+    try { await supabase.auth.signOut({ scope: 'local' }); }
+    catch (e) { console.error('로그아웃 오류:', e); }
 }
 
 // 로그인한 본인의 비밀번호 변경 (현재 세션 기준)

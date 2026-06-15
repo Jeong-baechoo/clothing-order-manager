@@ -3,10 +3,11 @@
 // 발주 상세 모달 (specs/001-b2b-order-module). 주문내역에서 클릭 시 표시. 기존 데이터만 사용.
 // admin=false(발주처): 접수/배송/도착 라벨 + 단가 숨김 / admin=true(관리자): 확정/출고/완료 + 단가 표시
 import React from 'react';
-import { purchaseOrderStatusMap, buyerOrderStatusMap, type PurchaseOrder, type PurchaseOrderStatus } from '../../models/orderTypes';
+import { purchaseOrderStatusMap, buyerOrderStatusMap, compareVariant, type PurchaseOrder, type PurchaseOrderStatus } from '../../models/orderTypes';
 
 const STEP_KEYS: PurchaseOrderStatus[] = ['requested', 'confirmed', 'shipped', 'done'];
-const spec = (size?: string, color?: string) => `${size ?? ''}${color ? ` / ${color}` : ''}`;
+// 규격 표기: 색상 → 사이즈 순 (예: "블랙 / L")
+const spec = (size?: string, color?: string) => [color, size].filter(Boolean).join(' / ');
 
 export default function PurchaseOrderDetailModal({ order, onClose, buyerName, admin = false }: {
     order: PurchaseOrder | null; onClose: () => void; buyerName?: string; admin?: boolean;
@@ -15,7 +16,7 @@ export default function PurchaseOrderDetailModal({ order, onClose, buyerName, ad
     const labelMap = admin ? purchaseOrderStatusMap : buyerOrderStatusMap;
     const canceled = order.status === 'canceled';
     const stepIdx = STEP_KEYS.indexOf(order.status);
-    const items = order.items ?? [];
+    const items = [...(order.items ?? [])].sort(compareVariant);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -57,7 +58,7 @@ export default function PurchaseOrderDetailModal({ order, onClose, buyerName, ad
                         <thead className="text-left text-gray-500 border-b border-gray-200 dark:border-gray-700">
                             <tr>
                                 <th className="py-2 w-10">No.</th><th>상품</th><th>규격</th>
-                                <th className="text-center">수량</th>
+                                <th className="text-center">수량</th><th>비고</th>
                                 {admin && <th className="text-right">단가</th>}
                                 {admin && <th className="text-right">금액</th>}
                             </tr>
@@ -69,6 +70,7 @@ export default function PurchaseOrderDetailModal({ order, onClose, buyerName, ad
                                     <td className="text-gray-900 dark:text-gray-100">{it.productName}</td>
                                     <td className="text-gray-700 dark:text-gray-300">{spec(it.size, it.color)}</td>
                                     <td className="text-center text-gray-700 dark:text-gray-300">{it.quantity}</td>
+                                    <td className="text-gray-500 dark:text-gray-400">{it.remarks ?? ''}</td>
                                     {admin && <td className="text-right text-gray-700 dark:text-gray-300">{it.unitPrice.toLocaleString()}</td>}
                                     {admin && <td className="text-right font-medium text-gray-900 dark:text-gray-100">{(it.unitPrice * it.quantity).toLocaleString()}</td>}
                                 </tr>
@@ -77,7 +79,7 @@ export default function PurchaseOrderDetailModal({ order, onClose, buyerName, ad
                         {admin && (
                             <tfoot>
                                 <tr className="font-semibold">
-                                    <td colSpan={5} className="py-2 text-right text-gray-600 dark:text-gray-300">합계</td>
+                                    <td colSpan={6} className="py-2 text-right text-gray-600 dark:text-gray-300">합계</td>
                                     <td className="text-right text-gray-900 dark:text-gray-100">{order.totalPrice.toLocaleString()}원</td>
                                 </tr>
                             </tfoot>

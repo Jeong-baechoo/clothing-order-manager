@@ -356,6 +356,22 @@ export interface PurchaseOrder {
     items?: PurchaseOrderItem[];
 }
 
+// 변형 정렬: 제품명 → 색상 → 사이즈 (색상 1차, 사이즈 2차). 발주처/관리자 공용.
+const VARIANT_SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', 'XXXL', '3XL', '4XL', 'FREE', 'F'];
+export function variantSizeRank(s?: string): number {
+    const i = VARIANT_SIZE_ORDER.indexOf((s ?? '').toUpperCase());
+    return i < 0 ? 999 : i;
+}
+export function compareVariant(
+    a: { productName?: string; color?: string; size?: string },
+    b: { productName?: string; color?: string; size?: string },
+): number {
+    return (a.productName ?? '').localeCompare(b.productName ?? '', 'ko')
+        || (a.color ?? '').localeCompare(b.color ?? '', 'ko')
+        || variantSizeRank(a.size) - variantSizeRank(b.size)
+        || (a.size ?? '').localeCompare(b.size ?? '');
+}
+
 // 발주처 포털 카탈로그 행 (제품 변형 + 재고)
 export interface CatalogRow {
     productId: string;

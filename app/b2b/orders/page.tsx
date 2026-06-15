@@ -11,7 +11,7 @@ import {
     getPurchaseOrders, getBuyers,
     confirmPurchaseOrder, advancePurchaseOrder, cancelPurchaseOrder,
 } from '../../lib/b2b';
-import { purchaseOrderStatusMap, type Buyer, type PurchaseOrder, type PurchaseOrderStatus } from '../../models/orderTypes';
+import { purchaseOrderStatusMap, compareVariant, type Buyer, type PurchaseOrder, type PurchaseOrderStatus } from '../../models/orderTypes';
 
 const statusColor: Record<PurchaseOrderStatus, string> = {
     requested: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200',
@@ -137,9 +137,9 @@ function OrdersInner() {
                             </div>
 
                             <ul className="mt-2 text-sm text-gray-600 dark:text-gray-300 space-y-0.5">
-                                {(o.items ?? []).map(it => (
+                                {[...(o.items ?? [])].sort(compareVariant).map(it => (
                                     <li key={it.id}>
-                                        {it.productName} · {it.size}/{it.color} × {it.quantity}
+                                        {it.productName} · {it.color}/{it.size} × {it.quantity}
                                         <span className="text-gray-400"> ({it.unitPrice.toLocaleString()}원)</span>
                                     </li>
                                 ))}
