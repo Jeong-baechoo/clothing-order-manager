@@ -90,20 +90,74 @@ export async function setBuyerActive(buyerId: string, active: boolean): Promise<
     return true;
 }
 
-// 제품 → 발주처 전용 배정 (products.buyer_id). buyerId=null 이면 배정 해제(고객주문용으로 환원)
-export async function setProductBuyer(productId: string, buyerId: string | null): Promise<boolean> {
-    const { error } = await supabase.from('products').update({ buyer_id: buyerId }).eq('id', productId);
-    if (error) { console.error('제품 발주처 배정 오류:', error); return false; }
+// =============================================================================
+// 제품 ↔ 발주처 다중 배정 (buyer_products M:N) — 013 적용 전제. 재고는 공유 풀.
+// =============================================================================
+
+// 제품별 배정 발주처 목록: productId → buyerId[]
+export async function getBuyerProductMap(): Promise<Record<string, string[]>> {
+    const { data, error } = await supabase.from('buyer_products').select('buyer_id, product_id');
+    if (error) { console.error('배정 맵 조회 오류:', error); return {}; }
+    const out: Record<string, string[]> = {};
+    for (const r of (data as { buyer_id: string; product_id: string }[])) {
+        (out[r.product_id] ??= []).push(r.buyer_id);
+    }
+    return out;
+}
+
+// 선택 발주처에 제품들을 배정(추가). 이미 있으면 무시. (다른 발주처 배정은 건드리지 않음)
+export async function addBuyerProducts(buyerId: string, productIds: string[]): Promise<boolean> {
+    if (productIds.length === 0) return true;
+    const rows = productIds.map(pid => ({ buyer_id: buyerId, product_id: pid }));
+    const { error } = await supabase.from('buyer_products')
+        .upsert(rows, { onConflict: 'buyer_id,product_id', ignoreDuplicates: true });
+    if (error) { console.error('배정 추가 오류:', error); return false; }
     return true;
 }
 
-// 관리자용 제품 목록 (배정 상태 포함). 기존 getProducts(supabase.js)는 buyer_id를 안 가져오므로 별도 제공.
-export interface AdminProduct { id: string; name: string; buyerId: string | null; }
+// 선택 발주처에서 제품들 배정 해제(삭제). 다른 발주처 배정은 유지.
+export async function removeBuyerProducts(buyerId: string, productIds: string[]): Promise<boolean> {
+    if (productIds.length === 0) return true;
+    const { error } = await supabase.from('buyer_products')
+        .delete().eq('buyer_id', buyerId).in('product_id', productIds);
+    if (error) { console.error('배정 삭제 오류:', error); return false; }
+    return true;
+}
+
+// 관리자용 제품 목록 (카테고리 + 회사 포함). 배정은 getBuyerProductMap 으로 별도 조회(M:N).
+type NamedRel = { name: string } | { name: string }[] | null;
+const relName = (r: NamedRel): string | null => (Array.isArray(r) ? r[0]?.name : r?.name) ?? null;
+export interface AdminProduct {
+    id: string; name: string;
+    categoryId: string | null; categoryName: string | null;
+    companyId: string | null; companyName: string | null;
+}
+interface AdminProductRow { id: string; name: string; category_id: string | null; categories: NamedRel; company_id: string | null; companies: NamedRel; }
 export async function getAdminProducts(): Promise<AdminProduct[]> {
-    const { data, error } = await supabase.from('products').select('id, name, buyer_id').order('name');
+    const { data, error } = await supabase.from('products')
+        .select('id, name, category_id, categories(name), company_id, companies(name)').order('name');
     if (error) { console.error('제품 목록 조회 오류:', error); return []; }
-    return (data as { id: string; name: string; buyer_id: string | null }[])
-        .map(r => ({ id: r.id, name: r.name, buyerId: r.buyer_id }));
+    return (data as AdminProductRow[]).map(r => ({
+        id: r.id, name: r.name,
+        categoryId: r.category_id, categoryName: relName(r.categories),
+        companyId: r.company_id, companyName: relName(r.companies),
+    }));
+}
+
+// 카테고리 목록 (정렬순). 일괄 배정 필터용.
+export interface CategoryOption { id: string; name: string; }
+export async function getCategories(): Promise<CategoryOption[]> {
+    const { data, error } = await supabase.from('categories').select('id, name').order('sort_order');
+    if (error) { console.error('카테고리 조회 오류:', error); return []; }
+    return (data as { id: string; name: string }[]).map(r => ({ id: r.id, name: r.name }));
+}
+
+// 회사(사입처) 목록. 일괄 배정 필터용.
+export interface CompanyOption { id: string; name: string; }
+export async function getCompanyOptions(): Promise<CompanyOption[]> {
+    const { data, error } = await supabase.from('companies').select('id, name').order('name');
+    if (error) { console.error('회사 조회 오류:', error); return []; }
+    return (data as { id: string; name: string }[]).map(r => ({ id: r.id, name: r.name }));
 }
 
 // =============================================================================
@@ -114,6 +168,24 @@ export async function getInventory(productId: string): Promise<ProductInventory[
         .from('product_inventory').select('*').eq('product_id', productId);
     if (error) { console.error('재고 조회 오류:', error); return []; }
     return (data as InventoryRow[]).map(toInventory);
+}
+
+// 전 제품 재고 요약 (읽기 전용, 단일 쿼리). 제품목록에서 품절/부족을 한눈에 보기 위함.
+// 반환: productId → { total: 총재고, variants: 변형 수, zero: 재고0 변형 수 }
+export interface StockSummary { total: number; variants: number; zero: number; }
+export async function getInventorySummary(): Promise<Record<string, StockSummary>> {
+    const { data, error } = await supabase
+        .from('product_inventory').select('product_id, stock_qty');
+    if (error) { console.error('재고 요약 조회 오류:', error); return {}; }
+    const out: Record<string, StockSummary> = {};
+    for (const r of (data as { product_id: string; stock_qty: number }[])) {
+        const s = out[r.product_id] ?? { total: 0, variants: 0, zero: 0 };
+        s.total += r.stock_qty;
+        s.variants += 1;
+        if (r.stock_qty === 0) s.zero += 1;
+        out[r.product_id] = s;
+    }
+    return out;
 }
 
 // (product_id, size, color) 기준 upsert. 같은 변형이면 수량/비고만 갱신.
@@ -131,10 +203,40 @@ export async function upsertInventory(input: {
     return toInventory(data as InventoryRow);
 }
 
-export async function deleteInventory(inventoryId: string): Promise<boolean> {
-    const { error } = await supabase.from('product_inventory').delete().eq('id', inventoryId);
-    if (error) { console.error('재고 삭제 오류:', error); return false; }
+// 전체 변형에서 실제 사용된 사이즈·색상 값 수집 (읽기 전용). 매트릭스 입력의 '칩' 후보로 사용 → 오타/중복 방지.
+export async function getDistinctVariantValues(): Promise<{ sizes: string[]; colors: string[] }> {
+    const { data, error } = await supabase.from('product_inventory').select('size, color');
+    if (error) { console.error('변형값 수집 오류:', error); return { sizes: [], colors: [] }; }
+    const sizes = new Set<string>(), colors = new Set<string>();
+    for (const r of (data as { size: string; color: string }[])) { sizes.add(r.size); colors.add(r.color); }
+    return { sizes: [...sizes], colors: [...colors] };
+}
+
+// 변형 재고 일괄 upsert (매트릭스 입력용). (product_id,size,color) 충돌 시 수량/비고 갱신.
+export async function upsertInventoryBatch(rows: {
+    productId: string; size: string; color: string; stockQty: number; remarks?: string;
+}[]): Promise<boolean> {
+    if (rows.length === 0) return true;
+    const payload = rows.map(r => ({
+        product_id: r.productId, size: r.size, color: r.color,
+        stock_qty: Math.max(0, r.stockQty), remarks: r.remarks ?? null, updated_at: new Date().toISOString(),
+    }));
+    const { error } = await supabase.from('product_inventory').upsert(payload, { onConflict: 'product_id,size,color' });
+    if (error) { console.error('재고 일괄 저장 오류:', error); return false; }
     return true;
+}
+
+export async function deleteInventory(inventoryId: string): Promise<{ success: boolean; error?: string }> {
+    const { error } = await supabase.from('product_inventory').delete().eq('id', inventoryId);
+    if (error) {
+        console.error('재고 삭제 오류:', error.code, error.message, error.details);
+        // 23503 = foreign_key_violation: 발주 내역(purchase_order_items)이 이 변형을 참조 중
+        const msg = error.code === '23503'
+            ? '이 변형은 발주 내역에서 사용 중이라 삭제할 수 없습니다. 대신 재고를 0으로 두세요.'
+            : (error.message || '삭제에 실패했습니다.');
+        return { success: false, error: msg };
+    }
+    return { success: true };
 }
 
 // =============================================================================

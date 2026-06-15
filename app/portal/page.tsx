@@ -29,6 +29,8 @@ const RANGES: { key: DateRange; label: string }[] = [
     { key: '1m', label: '1개월' }, { key: '1w', label: '1주' }, { key: 'today', label: '오늘' },
 ];
 
+const ORDER_STATUSES: PurchaseOrderStatus[] = ['requested', 'confirmed', 'shipped', 'done', 'canceled'];
+
 function PortalInner() {
     const [catalog, setCatalog] = useState<CatalogRow[]>([]);
     const [loading, setLoading] = useState(true);
@@ -37,6 +39,7 @@ function PortalInner() {
     const [search, setSearch] = useState('');
     const [orders, setOrders] = useState<PurchaseOrder[]>([]);
     const [range, setRange] = useState<DateRange>('3m');
+    const [statusFilter, setStatusFilter] = useState<PurchaseOrderStatus | 'all'>('all');
     const [submitting, setSubmitting] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [detailOrder, setDetailOrder] = useState<PurchaseOrder | null>(null);
@@ -85,15 +88,18 @@ function PortalInner() {
     };
 
     const filteredOrders = useMemo(() => {
-        if (range === 'all') return orders;
-        const now = new Date();
-        const cutoff = new Date(now);
-        if (range === '3m') cutoff.setMonth(now.getMonth() - 3);
-        else if (range === '1m') cutoff.setMonth(now.getMonth() - 1);
-        else if (range === '1w') cutoff.setDate(now.getDate() - 7);
-        else if (range === 'today') cutoff.setHours(0, 0, 0, 0);
-        return orders.filter(o => o.createdAt && new Date(o.createdAt) >= cutoff);
-    }, [orders, range]);
+        let list = statusFilter === 'all' ? orders : orders.filter(o => o.status === statusFilter);
+        if (range !== 'all') {
+            const now = new Date();
+            const cutoff = new Date(now);
+            if (range === '3m') cutoff.setMonth(now.getMonth() - 3);
+            else if (range === '1m') cutoff.setMonth(now.getMonth() - 1);
+            else if (range === '1w') cutoff.setDate(now.getDate() - 7);
+            else if (range === 'today') cutoff.setHours(0, 0, 0, 0);
+            list = list.filter(o => o.createdAt && new Date(o.createdAt) >= cutoff);
+        }
+        return list;
+    }, [orders, range, statusFilter]);
 
     return (
         <div className="max-w-5xl mx-auto space-y-5 pb-28">
@@ -216,6 +222,16 @@ function PortalInner() {
                             </button>
                         ))}
                     </div>
+                </div>
+                <div className="flex flex-wrap gap-1 mb-3">
+                    <button onClick={() => setStatusFilter('all')}
+                        className={`px-3 py-1 text-xs rounded ${statusFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>전체</button>
+                    {ORDER_STATUSES.map(s => (
+                        <button key={s} onClick={() => setStatusFilter(s)}
+                            className={`px-3 py-1 text-xs rounded ${statusFilter === s ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                            {buyerOrderStatusMap[s]}
+                        </button>
+                    ))}
                 </div>
                 <div className="space-y-2">
                     {filteredOrders.map(o => (
