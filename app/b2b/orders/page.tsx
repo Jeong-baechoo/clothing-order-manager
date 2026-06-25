@@ -141,9 +141,20 @@ function OrdersInner() {
                                     <li key={it.id}>
                                         {it.productName} · {it.color}/{it.size} × {it.quantity}
                                         <span className="text-gray-400"> ({it.unitPrice.toLocaleString()}원)</span>
+                                        {it.remarks && (
+                                            <span className="ml-1.5 inline-flex items-center rounded bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 text-xs text-amber-700 dark:text-amber-300 align-middle">
+                                                비고: {it.remarks}
+                                            </span>
+                                        )}
                                     </li>
                                 ))}
                             </ul>
+
+                            {o.note && (
+                                <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                    <span className="font-medium text-gray-600 dark:text-gray-300">발주 메모</span> · {o.note}
+                                </div>
+                            )}
 
                             <div className="mt-3 flex gap-2 justify-end">
                                 {o.status === 'requested' && (
