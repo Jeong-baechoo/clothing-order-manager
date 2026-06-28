@@ -360,8 +360,14 @@ export interface PurchaseOrder {
 
 // 변형 정렬: 제품명 → 색상 → 사이즈 (색상 1차, 사이즈 2차). 발주처/관리자 공용.
 const VARIANT_SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', 'XXXL', '3XL', '4XL', 'FREE', 'F'];
+// 색상 고정 우선순위 (이 순서대로 정렬 — 변형 편집 칩 순서와 일치). 목록 밖 색상은 뒤로 + 가나다순.
+export const VARIANT_COLOR_ORDER = ['블랙', '화이트', '네이비', '레드', '블루', '그레이', '베이지'];
 export function variantSizeRank(s?: string): number {
     const i = VARIANT_SIZE_ORDER.indexOf((s ?? '').toUpperCase());
+    return i < 0 ? 999 : i;
+}
+export function variantColorRank(c?: string): number {
+    const i = VARIANT_COLOR_ORDER.indexOf((c ?? '').trim());
     return i < 0 ? 999 : i;
 }
 export function compareVariant(
@@ -369,6 +375,7 @@ export function compareVariant(
     b: { productName?: string; color?: string; size?: string },
 ): number {
     return (a.productName ?? '').localeCompare(b.productName ?? '', 'ko')
+        || variantColorRank(a.color) - variantColorRank(b.color)
         || (a.color ?? '').localeCompare(b.color ?? '', 'ko')
         || variantSizeRank(a.size) - variantSizeRank(b.size)
         || (a.size ?? '').localeCompare(b.size ?? '');

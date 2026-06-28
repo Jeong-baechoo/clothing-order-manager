@@ -10,11 +10,14 @@ import {
     getInventory, getDistinctVariantValues, upsertInventory, upsertInventoryBatch, deleteInventory,
     type AdminProduct,
 } from '../../lib/b2b';
+import { VARIANT_COLOR_ORDER, variantColorRank } from '../../models/orderTypes';
 import type { ProductInventory } from '../../models/orderTypes';
 
 const DEFAULT_SIZES = ['S', 'M', 'L', 'XL', '2XL', 'FREE'];
-const DEFAULT_COLORS = ['블랙', '화이트', '그레이', '네이비', '베이지'];
+const DEFAULT_COLORS = VARIANT_COLOR_ORDER;
 const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', 'XXXL', '3XL', '4XL', 'FREE', 'F'];
+// 색상 정렬: 고정 우선순위 → 그 외는 가나다순 (발주내역 정렬과 동일 기준)
+const sortColors = (arr: string[]) => [...arr].sort((a, b) => variantColorRank(a) - variantColorRank(b) || a.localeCompare(b, 'ko'));
 
 function sortSizes(arr: string[]): string[] {
     return [...arr].sort((a, b) => {
@@ -65,7 +68,7 @@ export default function VariantEditorModal({ product, allProducts, onClose, onSa
 
     // 칩 후보: 현재선택(=DB 실제값) → 학습 → 기본 순으로 우선. 대소문자 무시 중복 제거('S'/'s' 통합).
     const candSizes = useMemo(() => sortSizes(dedupCI([...selSizes, ...learned.sizes, ...DEFAULT_SIZES])), [learned.sizes, selSizes]);
-    const candColors = useMemo(() => dedupCI([...selColors, ...learned.colors, ...DEFAULT_COLORS]), [learned.colors, selColors]);
+    const candColors = useMemo(() => sortColors(dedupCI([...selColors, ...learned.colors, ...DEFAULT_COLORS])), [learned.colors, selColors]);
 
     const toggleSize = (s: string) => setSelSizes(prev => prev.includes(s) ? prev.filter(x => x !== s) : sortSizes([...prev, s]));
     const toggleColor = (c: string) => setSelColors(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]);
@@ -109,9 +112,10 @@ export default function VariantEditorModal({ product, allProducts, onClose, onSa
     const otherProducts = allProducts.filter(p => p.id !== product.id);
 
     // 색상 → 사이즈 정렬: 매트릭스 색상 행 / 현재 변형 목록
-    const displayColors = useMemo(() => [...selColors].sort((a, b) => a.localeCompare(b, 'ko')), [selColors]);
+    const displayColors = useMemo(() => sortColors(selColors), [selColors]);
     const invSorted = useMemo(() => [...inv].sort((a, b) =>
-        a.color.localeCompare(b.color, 'ko') || sizeRank(a.size) - sizeRank(b.size) || a.size.localeCompare(b.size)), [inv]);
+        variantColorRank(a.color) - variantColorRank(b.color) || a.color.localeCompare(b.color, 'ko')
+        || sizeRank(a.size) - sizeRank(b.size) || a.size.localeCompare(b.size)), [inv]);
 
     const chip = (label: string, on: boolean, onClick: () => void) => (
         <button key={label} onClick={onClick}
