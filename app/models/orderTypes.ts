@@ -353,6 +353,8 @@ export interface PurchaseOrder {
     note?: string;
     createdAt?: string;
     confirmedAt?: string | null;
+    adminHidden?: boolean;   // 관리자 목록에서 숨김 (취소건 정리용)
+    buyerHidden?: boolean;   // 발주처 목록에서 숨김
     items?: PurchaseOrderItem[];
 }
 

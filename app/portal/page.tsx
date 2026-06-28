@@ -8,7 +8,7 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import RequireRole from '../components/auth/RequireRole';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import PurchaseOrderDetailModal from '../components/b2b/PurchaseOrderDetailModal';
-import { getMyCatalog, placePurchaseOrder, getPurchaseOrders, cancelMyPurchaseOrder } from '../lib/b2b';
+import { getMyCatalog, placePurchaseOrder, getPurchaseOrders, cancelMyPurchaseOrder, hidePurchaseOrder } from '../lib/b2b';
 import { getSessionInfo } from '../lib/auth';
 import { buyerOrderStatusMap, compareVariant, type CatalogRow, type PurchaseOrder, type PurchaseOrderStatus } from '../models/orderTypes';
 
@@ -60,6 +60,7 @@ function PortalInner() {
     const [orders, setOrders] = useState<PurchaseOrder[]>([]);
     const [range, setRange] = useState<DateRange>('3m');
     const [statusFilter, setStatusFilter] = useState<PurchaseOrderStatus | 'all'>('all');
+    const [showHidden, setShowHidden] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [detailOrder, setDetailOrder] = useState<PurchaseOrder | null>(null);
@@ -157,8 +158,13 @@ function PortalInner() {
         loadOrders();
     };
 
+    const hiddenCount = orders.filter(o => o.buyerHidden).length;
+
     const filteredOrders = useMemo(() => {
-        let list = statusFilter === 'all' ? orders : orders.filter(o => o.status === statusFilter);
+        // 숨김 보기: 숨겨둔 발주만. 그 외: 숨김 제외 + 상태/기간 필터.
+        if (showHidden) return orders.filter(o => o.buyerHidden);
+        let list = orders.filter(o => !o.buyerHidden);
+        if (statusFilter !== 'all') list = list.filter(o => o.status === statusFilter);
         if (range !== 'all') {
             const now = new Date();
             const cutoff = new Date(now);
@@ -169,7 +175,14 @@ function PortalInner() {
             list = list.filter(o => o.createdAt && new Date(o.createdAt) >= cutoff);
         }
         return list;
-    }, [orders, range, statusFilter]);
+    }, [orders, range, statusFilter, showHidden]);
+
+    const doHide = async (o: PurchaseOrder, hidden: boolean) => {
+        const r = await hidePurchaseOrder(o.id, hidden);
+        if (!r.success) { showToast('error', hidden ? '숨김에 실패했습니다.' : '숨김 해제에 실패했습니다.'); return; }
+        showToast('success', hidden ? '내 목록에서 숨겼습니다.' : '숨김을 해제했습니다.');
+        loadOrders();
+    };
 
     const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
     const NAV: { k: View; label: string }[] = [{ k: 'create', label: '발주서 작성' }, { k: 'history', label: '발주 내역' }];
@@ -382,14 +395,20 @@ function PortalInner() {
                                     ))}
                                 </div>
                                 <div className="flex flex-wrap gap-1">
-                                    <button onClick={() => setStatusFilter('all')}
-                                        className={`px-3 py-1 text-xs rounded ${statusFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>전체</button>
+                                    <button onClick={() => { setShowHidden(false); setStatusFilter('all'); }}
+                                        className={`px-3 py-1 text-xs rounded ${!showHidden && statusFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>전체</button>
                                     {ORDER_STATUSES.map(s => (
-                                        <button key={s} onClick={() => setStatusFilter(s)}
-                                            className={`px-3 py-1 text-xs rounded ${statusFilter === s ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
+                                        <button key={s} onClick={() => { setShowHidden(false); setStatusFilter(s); }}
+                                            className={`px-3 py-1 text-xs rounded ${!showHidden && statusFilter === s ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
                                             {buyerOrderStatusMap[s]}
                                         </button>
                                     ))}
+                                    {(hiddenCount > 0 || showHidden) && (
+                                        <button onClick={() => setShowHidden(h => !h)}
+                                            className={`px-3 py-1 text-xs rounded border ${showHidden ? 'bg-slate-700 text-white border-slate-700' : 'border-slate-300 dark:border-slate-600 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+                                            숨긴 발주 {hiddenCount}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                             <div className="space-y-2">
@@ -411,10 +430,27 @@ function PortalInner() {
                                                         발주 취소
                                                     </button>
                                                 )}
+                                                {o.status === 'canceled' && (
+                                                    <button
+                                                        onClick={e => { e.stopPropagation(); doHide(o, !o.buyerHidden); }}
+                                                        onKeyDown={e => e.stopPropagation()}
+                                                        className="text-xs px-2 py-0.5 rounded border border-slate-200 dark:border-slate-600 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-500 transition-colors">
+                                                        {o.buyerHidden ? '숨김 해제' : '숨기기'}
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
-                                        <div className="text-slate-600 dark:text-slate-300 mt-1.5">
-                                            {[...(o.items ?? [])].sort(compareVariant).map(it => `${it.productName} ${specOf(it.size, it.color)}×${it.quantity}`).join(', ')}
+                                        <div className="text-slate-600 dark:text-slate-300 mt-1.5 space-y-0.5">
+                                            {[...(o.items ?? [])].sort(compareVariant).map(it => (
+                                                <div key={it.id}>
+                                                    {it.productName} {specOf(it.size, it.color)}×{it.quantity}
+                                                    {it.remarks && (
+                                                        <span className="ml-1.5 inline-flex items-center rounded bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 text-xs text-amber-700 dark:text-amber-300 align-middle">
+                                                            비고: {it.remarks}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 ))}

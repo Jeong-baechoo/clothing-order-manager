@@ -18,7 +18,7 @@ import type {
 interface BuyerRow { id: string; name: string; login_email: string; auth_user_id: string | null; active: boolean; created_at: string; }
 interface InventoryRow { id: string; product_id: string; size: string; color: string; stock_qty: number; remarks: string | null; }
 interface POItemRow { id: string; inventory_id: string | null; product_id: string | null; product_name: string | null; size: string | null; color: string | null; quantity: number; unit_price: number; remarks: string | null; }
-interface PORow { id: string; po_no: string | null; buyer_id: string; status: PurchaseOrderStatus; total_price: number; note: string | null; created_at: string; confirmed_at: string | null; items?: POItemRow[]; }
+interface PORow { id: string; po_no: string | null; buyer_id: string; status: PurchaseOrderStatus; total_price: number; note: string | null; created_at: string; confirmed_at: string | null; admin_hidden?: boolean; buyer_hidden?: boolean; items?: POItemRow[]; }
 interface CatalogRowRaw { product_id: string; product_name: string; default_price: number; wholesale_price: number; inventory_id: string; size: string; color: string; stock_qty: number; remarks: string | null; }
 
 // ===== 매퍼 =====
@@ -38,7 +38,8 @@ const toPoItem = (r: POItemRow): PurchaseOrderItem => ({
 const toPurchaseOrder = (r: PORow): PurchaseOrder => ({
     id: r.id, poNo: r.po_no ?? undefined, buyerId: r.buyer_id, status: r.status,
     totalPrice: r.total_price, note: r.note ?? undefined, createdAt: r.created_at,
-    confirmedAt: r.confirmed_at, items: (r.items ?? []).map(toPoItem),
+    confirmedAt: r.confirmed_at, adminHidden: r.admin_hidden ?? false, buyerHidden: r.buyer_hidden ?? false,
+    items: (r.items ?? []).map(toPoItem),
 });
 const toCatalogRow = (r: CatalogRowRaw): CatalogRow => ({
     productId: r.product_id, productName: r.product_name, defaultPrice: r.default_price,
@@ -300,5 +301,19 @@ export async function advancePurchaseOrder(poId: string, to: PurchaseOrderStatus
 export async function cancelPurchaseOrder(poId: string): Promise<{ success: boolean; error?: unknown }> {
     const { error } = await supabase.rpc('cancel_purchase_order', { p_po: poId });
     if (error) { console.error('발주 취소 오류:', error); return { success: false, error }; }
+    return { success: true };
+}
+
+// 발주 숨김 토글 — 취소된 발주만. 관리자/발주처가 각자 자기 목록에서만 숨김(기록 보존).
+export async function hidePurchaseOrder(poId: string, hidden: boolean): Promise<{ success: boolean; error?: unknown }> {
+    const { error } = await supabase.rpc('hide_purchase_order', { p_po: poId, p_hidden: hidden });
+    if (error) { console.error('발주 숨김 오류:', error); return { success: false, error }; }
+    return { success: true };
+}
+
+// 취소 → 신청(requested) 복구 — 재고 무변동 (관리자)
+export async function restorePurchaseOrder(poId: string): Promise<{ success: boolean; error?: unknown }> {
+    const { error } = await supabase.rpc('restore_purchase_order', { p_po: poId });
+    if (error) { console.error('발주 복구 오류:', error); return { success: false, error }; }
     return { success: true };
 }
