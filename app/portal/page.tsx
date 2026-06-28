@@ -63,6 +63,7 @@ function PortalInner() {
     const [showHidden, setShowHidden] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
+    const [zeroWarn, setZeroWarn] = useState(false);
     const [detailOrder, setDetailOrder] = useState<PurchaseOrder | null>(null);
     const [cancelTarget, setCancelTarget] = useState<PurchaseOrder | null>(null);
     const [toast, setToast] = useState<{ kind: 'success' | 'error'; msg: string } | null>(null);
@@ -130,11 +131,21 @@ function PortalInner() {
         });
     };
 
+    // 담긴 품목 = qty 에 키가 있는 것(수량 0이어도 유지). 실제 제거는 ✕ 버튼(clearCells).
     const cart = useMemo(() =>
-        catalog.map(r => ({ row: r, q: qty[r.inventoryId] || 0 })).filter(x => x.q > 0)
+        catalog.filter(r => r.inventoryId in qty)
+            .map(r => ({ row: r, q: qty[r.inventoryId] }))
             .sort((a, b) => compareVariant(a.row, b.row)),
         [catalog, qty]);
     const cartUnits = cart.reduce((s, x) => s + x.q, 0);
+    const zeroItems = cart.filter(x => x.q <= 0);
+
+    // 신청하기: 수량 0 품목이 있으면 모달로 차단, 없으면 확인 다이얼로그
+    const handleSubmitClick = () => {
+        if (cart.length === 0) return;
+        if (zeroItems.length > 0) { setZeroWarn(true); return; }
+        setConfirmOpen(true);
+    };
 
     const doSubmit = async () => {
         setConfirmOpen(false);
@@ -341,7 +352,7 @@ function PortalInner() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {cart.map(x => (
+                                            {cart.map((x, i) => (
                                                 <tr key={x.row.inventoryId} className="border-t border-slate-100 dark:border-slate-800 align-middle">
                                                     <td className="px-3 py-1.5 text-slate-900 dark:text-slate-100">{x.row.productName}</td>
                                                     <td className="text-slate-600 dark:text-slate-300">{specOf(x.row.size, x.row.color)}</td>
@@ -352,8 +363,17 @@ function PortalInner() {
                                                         <div className="flex items-center justify-center gap-1">
                                                             <button type="button" disabled={x.q <= 0} onClick={() => setItemQty(x.row.inventoryId, x.q - 1, x.row.stockQty)}
                                                                 className="w-6 h-6 rounded border border-slate-300 dark:border-slate-600 text-slate-500 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-700">−</button>
-                                                            <input type="number" min="0" max={x.row.stockQty} value={x.q || ''}
+                                                            <input type="number" min="0" max={x.row.stockQty} value={x.q}
+                                                                data-qty-idx={i}
                                                                 onChange={e => setItemQty(x.row.inventoryId, parseInt(e.target.value), x.row.stockQty)}
+                                                                onKeyDown={e => {
+                                                                    if (e.key === 'Enter') {
+                                                                        e.preventDefault();
+                                                                        const next = document.querySelector<HTMLInputElement>(`input[data-qty-idx="${i + 1}"]`);
+                                                                        if (next) { next.focus(); next.select(); }
+                                                                        else (e.target as HTMLInputElement).blur();
+                                                                    }
+                                                                }}
                                                                 className="w-12 h-7 px-1 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded text-center" />
                                                             <button type="button" disabled={x.q >= x.row.stockQty} onClick={() => setItemQty(x.row.inventoryId, x.q + 1, x.row.stockQty)}
                                                                 className="w-6 h-6 rounded border border-slate-300 dark:border-slate-600 text-slate-500 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-700">+</button>
@@ -366,7 +386,7 @@ function PortalInner() {
                                                             className="w-full h-7 px-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded text-sm" />
                                                     </td>
                                                     <td className="text-center">
-                                                        <button onClick={() => setItemQty(x.row.inventoryId, 0, x.row.stockQty)} className="text-slate-300 hover:text-red-600" title="삭제">✕</button>
+                                                        <button onClick={() => { clearCells([{ inventoryId: x.row.inventoryId }]); setLineRemarks(p => { const n = { ...p }; delete n[x.row.inventoryId]; return n; }); }} className="text-slate-300 hover:text-red-600" title="품목 삭제">✕</button>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -501,7 +521,7 @@ function PortalInner() {
                         </div>
                         <input value={note} onChange={e => setNote(e.target.value)} placeholder="주문메모(선택)"
                             className="flex-1 min-w-0 px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-md text-sm" />
-                        <button onClick={() => setConfirmOpen(true)} disabled={submitting || cart.length === 0}
+                        <button onClick={handleSubmitClick} disabled={submitting || cart.length === 0}
                             className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 font-medium whitespace-nowrap">
                             {submitting ? '신청 중…' : '신청하기'}
                         </button>
@@ -530,6 +550,27 @@ function PortalInner() {
                 onConfirm={doCancel}
                 onCancel={() => setCancelTarget(null)}
             />
+
+            {zeroWarn && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setZeroWarn(false)}>
+                    <div className="absolute inset-0 bg-black/50" />
+                    <div className="relative bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-sm w-full p-5" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center text-red-600 dark:text-red-300 text-xl font-bold">!</div>
+                            <div className="min-w-0">
+                                <h3 className="font-semibold text-slate-900 dark:text-slate-100">발주 신청할 수 없습니다</h3>
+                                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">수량이 0인 품목이 있습니다. 수량을 입력하거나 해당 품목을 삭제(✕)한 뒤 다시 신청해주세요.</p>
+                                <ul className="mt-2 text-sm text-slate-500 dark:text-slate-400 space-y-0.5 max-h-40 overflow-y-auto">
+                                    {zeroItems.map(x => <li key={x.row.inventoryId}>· {x.row.productName} {specOf(x.row.size, x.row.color)}</li>)}
+                                </ul>
+                            </div>
+                        </div>
+                        <div className="mt-4 flex justify-end">
+                            <button onClick={() => setZeroWarn(false)} className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">확인</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <PurchaseOrderDetailModal order={detailOrder} onClose={() => setDetailOrder(null)} />
         </>
