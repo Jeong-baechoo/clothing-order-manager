@@ -10,7 +10,7 @@ import ConfirmDialog from '../components/ui/ConfirmDialog';
 import PurchaseOrderDetailModal from '../components/b2b/PurchaseOrderDetailModal';
 import { getMyCatalog, placePurchaseOrder, getPurchaseOrders, cancelMyPurchaseOrder, hidePurchaseOrder } from '../lib/b2b';
 import { getSessionInfo } from '../lib/auth';
-import { buyerOrderStatusMap, compareVariant, type CatalogRow, type PurchaseOrder, type PurchaseOrderStatus } from '../models/orderTypes';
+import { buyerOrderStatusMap, compareVariant, variantColorRank, type CatalogRow, type PurchaseOrder, type PurchaseOrderStatus } from '../models/orderTypes';
 
 // 규격 표기: 색상 → 사이즈 순 (예: "블랙 / L")
 const specOf = (size?: string, color?: string) => [color, size].filter(Boolean).join(' / ');
@@ -100,7 +100,7 @@ function PortalInner() {
             if (q && !(rows[0].productName.toLowerCase().includes(q) || pid.toLowerCase().includes(q)
                 || rows.some(r => r.size.toLowerCase().includes(q) || r.color.toLowerCase().includes(q)))) continue;
             const sizes = sortSizes([...new Set(rows.map(r => r.size))]);
-            const colors = [...new Set(rows.map(r => r.color))].sort((a, b) => a.localeCompare(b, 'ko'));
+            const colors = [...new Set(rows.map(r => r.color))].sort((a, b) => variantColorRank(a) - variantColorRank(b) || a.localeCompare(b, 'ko'));
             const cell: Record<string, CatalogRow> = {};
             let totalStock = 0;
             for (const r of rows) { cell[`${r.size}|${r.color}`] = r; totalStock += r.stockQty; }
