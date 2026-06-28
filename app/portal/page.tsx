@@ -64,6 +64,7 @@ function PortalInner() {
     const [submitting, setSubmitting] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [zeroWarn, setZeroWarn] = useState(false);
+    const [ordCollapsed, setOrdCollapsed] = useState<Record<string, boolean>>({}); // 발주 내역 주문별 접기
     const [detailOrder, setDetailOrder] = useState<PurchaseOrder | null>(null);
     const [cancelTarget, setCancelTarget] = useState<PurchaseOrder | null>(null);
     const [toast, setToast] = useState<{ kind: 'success' | 'error'; msg: string } | null>(null);
@@ -438,7 +439,16 @@ function PortalInner() {
                                         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setDetailOrder(o); } }}
                                         className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-sm hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-sm transition cursor-pointer">
                                         <div className="flex justify-between items-center">
-                                            <span className="font-mono text-slate-500">{o.poNo}</span>
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <button
+                                                    onClick={e => { e.stopPropagation(); setOrdCollapsed(p => ({ ...p, [o.id]: !p[o.id] })); }}
+                                                    onKeyDown={e => e.stopPropagation()}
+                                                    title={ordCollapsed[o.id] ? '펼치기' : '접기'} aria-label="접기/펼치기"
+                                                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs leading-none">
+                                                    <span className={`inline-block transition-transform ${ordCollapsed[o.id] ? '' : 'rotate-90'}`}>▶</span>
+                                                </button>
+                                                <span className="font-mono text-slate-500">{o.poNo}</span>
+                                            </div>
                                             <div className="flex items-center gap-3">
                                                 <span className="text-slate-400">{o.createdAt ? o.createdAt.slice(0, 10) : ''}</span>
                                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusBadge[o.status]}`}>{buyerOrderStatusMap[o.status]}</span>
@@ -460,18 +470,41 @@ function PortalInner() {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="text-slate-600 dark:text-slate-300 mt-1.5 space-y-0.5">
-                                            {[...(o.items ?? [])].sort(compareVariant).map(it => (
-                                                <div key={it.id}>
-                                                    {it.productName} {specOf(it.size, it.color)}×{it.quantity}
-                                                    {it.remarks && (
-                                                        <span className="ml-1.5 inline-flex items-center rounded bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 text-xs text-amber-700 dark:text-amber-300 align-middle">
-                                                            비고: {it.remarks}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
+                                        {ordCollapsed[o.id] ? (
+                                            <div className="mt-1 text-xs text-slate-400">
+                                                {(o.items ?? []).length}품목 · {(o.items ?? []).reduce((s, it) => s + it.quantity, 0)}개
+                                            </div>
+                                        ) : (
+                                            <table className="w-full mt-2 text-xs table-fixed">
+                                                <colgroup>
+                                                    <col className="w-[34%]" />
+                                                    <col className="w-[16%]" />
+                                                    <col className="w-[14%]" />
+                                                    <col className="w-[12%]" />
+                                                    <col className="w-[24%]" />
+                                                </colgroup>
+                                                <thead>
+                                                    <tr className="text-slate-400 text-left border-b border-slate-100 dark:border-slate-700">
+                                                        <th className="font-normal py-1 pr-2">품목</th>
+                                                        <th className="font-normal py-1 pr-2">컬러</th>
+                                                        <th className="font-normal py-1 pr-2">사이즈</th>
+                                                        <th className="font-normal py-1 pr-2 text-right">수량</th>
+                                                        <th className="font-normal py-1">비고</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {[...(o.items ?? [])].sort(compareVariant).map(it => (
+                                                        <tr key={it.id} className="text-slate-700 dark:text-slate-300 border-b border-slate-50 dark:border-slate-800/60 last:border-0">
+                                                            <td className="py-1 pr-2 truncate">{it.productName}</td>
+                                                            <td className="py-1 pr-2 truncate">{it.color}</td>
+                                                            <td className="py-1 pr-2 truncate">{it.size}</td>
+                                                            <td className="py-1 pr-2 text-right">{it.quantity}</td>
+                                                            <td className="py-1 text-slate-500 truncate">{it.remarks || '-'}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        )}
                                     </div>
                                 ))}
                                 {filteredOrders.length === 0 && (
