@@ -7,6 +7,7 @@ interface Product {
     id: string;
     name: string;
     default_price: number;
+    wholesale_price?: number;
     company_id: string;
     category_id?: number;
     companies?: { name: string };

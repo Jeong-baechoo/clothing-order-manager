@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Order, OrderItem } from '../models/orderTypes';
-import { getOrders } from '../lib/supabase';
+import { Order, OrderItem, DefectLog } from '../models/orderTypes';
+import { getOrders, getDefectLogs } from '../lib/supabase';
 import {
     LineChart,
     Line,
@@ -24,6 +24,7 @@ import {
 interface AnalyticsData {
     totalRevenue: number;
     totalCost: number;
+    totalDefectLoss: number;
     netProfit: number;
     profitMargin: number;
     totalOrders: number;
@@ -32,6 +33,11 @@ interface AnalyticsData {
         product: string;
         quantity: number;
         revenue: number;
+    }>;
+    productLosses: Array<{
+        product: string;
+        quantity: number;
+        loss: number;
     }>;
     monthlyData: Array<{
         month: string;
@@ -65,23 +71,26 @@ const CustomTooltip = ({ active, payload, label }: {
     return null;
 };
 
-const ANALYTICS_PASSWORD = '1234';
+const ANALYTICS_PASSWORD = '0605';
 
 export default function AnalyticsPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [passwordInput, setPasswordInput] = useState('');
     const [passwordError, setPasswordError] = useState(false);
     const [orders, setOrders] = useState<Order[]>([]);
+    const [defects, setDefects] = useState<DefectLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedMonth, setSelectedMonth] = useState<string>('all');
     const [analytics, setAnalytics] = useState<AnalyticsData>({
         totalRevenue: 0,
         totalCost: 0,
+        totalDefectLoss: 0,
         netProfit: 0,
         profitMargin: 0,
         totalOrders: 0,
         averageOrderValue: 0,
         topProducts: [],
+        productLosses: [],
         monthlyData: []
     });
 
@@ -159,10 +168,15 @@ export default function AnalyticsPage() {
             }));
 
             setOrders(transformedOrders);
+
+            // 불량(로스) 기록 로드 — 순마진 차감 및 제품별 로스 통계용
+            const defectData = await getDefectLogs();
+            setDefects(defectData);
         } catch (error) {
             console.error('데이터 로드 실패:', error);
             // 에러 발생 시 빈 배열로 초기화
             setOrders([]);
+            setDefects([]);
         } finally {
             setLoading(false);
         }
@@ -240,7 +254,29 @@ export default function AnalyticsPage() {
             });
         });
 
-        const netProfit = totalRevenue - totalCost;
+        // 불량(로스) 손실 집계 — 손실 = 단가(도매가) × 수량. 월 필터 동일 적용.
+        let totalDefectLoss = 0;
+        const productLossMap = new Map<string, { quantity: number; loss: number }>();
+        const monthlyLossMap = new Map<string, number>();
+        defects.filter(d => {
+            if (selectedMonth === 'all') return true;
+            return d.logDate.startsWith(selectedMonth);
+        }).forEach(d => {
+            const loss = d.unitPrice * d.quantity;
+            totalDefectLoss += loss;
+
+            const existing = productLossMap.get(d.productName) || { quantity: 0, loss: 0 };
+            productLossMap.set(d.productName, {
+                quantity: existing.quantity + d.quantity,
+                loss: existing.loss + loss
+            });
+
+            const month = d.logDate.slice(0, 7);
+            monthlyLossMap.set(month, (monthlyLossMap.get(month) || 0) + loss);
+        });
+
+        // 순마진에서 불량 손실 차감
+        const netProfit = totalRevenue - totalCost - totalDefectLoss;
         const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
         // 상위 제품 정렬
@@ -249,13 +285,18 @@ export default function AnalyticsPage() {
             .sort((a, b) => b.revenue - a.revenue)
             .slice(0, 5);
 
-        // 월별 데이터 정렬
+        // 제품별 로스 정렬 (손실 큰 순)
+        const productLosses = Array.from(productLossMap.entries())
+            .map(([product, data]) => ({ product, ...data }))
+            .sort((a, b) => b.loss - a.loss);
+
+        // 월별 데이터 정렬 (수익에서 해당 월 로스 차감)
         const monthlyData = Array.from(monthlyMap.entries())
             .map(([month, data]) => ({
                 month,
                 revenue: data.revenue,
                 cost: data.cost,
-                profit: data.revenue - data.cost
+                profit: data.revenue - data.cost - (monthlyLossMap.get(month) || 0)
             }))
             .sort((a, b) => a.month.localeCompare(b.month));
 
@@ -268,14 +309,16 @@ export default function AnalyticsPage() {
         setAnalytics({
             totalRevenue,
             totalCost,
+            totalDefectLoss,
             netProfit,
             profitMargin,
             totalOrders: filteredOrders,
             averageOrderValue: filteredOrders > 0 ? totalRevenue / filteredOrders : 0,
             topProducts,
+            productLosses,
             monthlyData
         });
-    }, [orders, calculateItemCost, selectedMonth]);
+    }, [orders, defects, calculateItemCost, selectedMonth]);
 
     useEffect(() => {
         loadData();
@@ -367,7 +410,10 @@ export default function AnalyticsPage() {
                             className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         >
                             <option value="all">전체 기간</option>
-                            {orders.length > 0 && Array.from(new Set(orders.map(o => o.orderDate.slice(0, 7))))
+                            {Array.from(new Set([
+                                ...orders.map(o => o.orderDate.slice(0, 7)),
+                                ...defects.map(d => d.logDate.slice(0, 7))
+                            ]))
                                 .sort((a, b) => b.localeCompare(a))
                                 .map(month => (
                                     <option key={month} value={month}>
@@ -380,7 +426,7 @@ export default function AnalyticsPage() {
                 </div>
 
                 {/* 주요 지표 카드 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
                     <div className="bg-white rounded-lg shadow p-6">
                         <div className="flex items-center">
                             <div className="flex-shrink-0">
@@ -432,9 +478,29 @@ export default function AnalyticsPage() {
                             </div>
                             <div className="ml-5 w-0 flex-1">
                                 <dl>
-                                    <dt className="text-sm font-medium text-gray-500 truncate">순수익</dt>
+                                    <dt className="text-sm font-medium text-gray-500 truncate">순수익 (로스 반영)</dt>
                                     <dd className="text-lg font-medium text-gray-900">
                                         {analytics.netProfit.toLocaleString()}원
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-lg shadow p-6">
+                        <div className="flex items-center">
+                            <div className="flex-shrink-0">
+                                <div className="w-8 h-8 bg-orange-500 rounded-md flex items-center justify-center">
+                                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div className="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt className="text-sm font-medium text-gray-500 truncate">불량 로스</dt>
+                                    <dd className="text-lg font-medium text-red-600">
+                                        -{analytics.totalDefectLoss.toLocaleString()}원
                                     </dd>
                                 </dl>
                             </div>
@@ -594,6 +660,40 @@ export default function AnalyticsPage() {
                                 </div>
                             )}
                         </div>
+                    </div>
+                </div>
+
+                {/* 제품별 로스 */}
+                <div className="bg-white rounded-lg shadow mb-8">
+                    <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                        <h3 className="text-lg font-medium text-gray-900">제품별 로스 (불량 손실)</h3>
+                        <span className="text-sm text-gray-500">총 -{analytics.totalDefectLoss.toLocaleString()}원</span>
+                    </div>
+                    <div className="p-6">
+                        {analytics.productLosses.length > 0 ? (
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead>
+                                        <tr>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">품목</th>
+                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">불량 수량</th>
+                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">손실액</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {analytics.productLosses.map((p, index) => (
+                                            <tr key={index}>
+                                                <td className="px-4 py-2 text-sm font-medium text-gray-900">{p.product}</td>
+                                                <td className="px-4 py-2 text-right text-sm text-gray-600">{p.quantity.toLocaleString()}개</td>
+                                                <td className="px-4 py-2 text-right text-sm font-medium text-red-600">-{p.loss.toLocaleString()}원</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="text-center py-6 text-gray-500 text-sm">해당 기간에 기록된 불량이 없습니다.</div>
+                        )}
                     </div>
                 </div>
 

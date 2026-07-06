@@ -690,3 +690,80 @@ export async function getProducts(companyId = null) {
     return { success: false, error };
   }
 }
+
+// =============================================================================
+// 불량(로스) 기록 defect_logs — 관리자
+// 금액(손실)은 unit_price * quantity 로 앱에서 파생.
+// =============================================================================
+export async function getDefectLogs() {
+  const { data, error } = await supabase
+    .from('defect_logs')
+    .select('*')
+    .order('log_date', { ascending: false })
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    // 42P01 = undefined_table: 마이그레이션 021(defect_logs) 미실행 시 발생
+    console.error('불량 기록 조회 오류:', error.code, error.message, error.details);
+    return [];
+  }
+
+  return (data || []).map(r => ({
+    id: r.id,
+    logDate: r.log_date,
+    productId: r.product_id ?? undefined,
+    productName: r.product_name,
+    unitPrice: r.unit_price,
+    quantity: r.quantity,
+    remarks: r.remarks ?? undefined,
+    personInCharge: r.person_in_charge ?? undefined,
+    createdAt: r.created_at
+  }));
+}
+
+export async function addDefectLog(entry) {
+  const { data, error } = await supabase
+    .from('defect_logs')
+    .insert({
+      log_date: entry.logDate,
+      product_id: entry.productId || null,
+      product_name: entry.productName,
+      unit_price: entry.unitPrice || 0,
+      quantity: entry.quantity || 0,
+      remarks: entry.remarks || null,
+      person_in_charge: entry.personInCharge || null
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('불량 기록 추가 오류:', error.code, error.message, error.details);
+    return null;
+  }
+
+  return {
+    id: data.id,
+    logDate: data.log_date,
+    productId: data.product_id ?? undefined,
+    productName: data.product_name,
+    unitPrice: data.unit_price,
+    quantity: data.quantity,
+    remarks: data.remarks ?? undefined,
+    personInCharge: data.person_in_charge ?? undefined,
+    createdAt: data.created_at
+  };
+}
+
+export async function deleteDefectLog(id) {
+  const { error } = await supabase
+    .from('defect_logs')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('불량 기록 삭제 오류:', error.code, error.message, error.details);
+    return false;
+  }
+
+  return true;
+}

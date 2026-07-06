@@ -27,6 +27,20 @@ export interface Product {
     category?: Category;
 }
 
+// 불량(로스) 기록 타입 정의
+// 금액(손실)은 unitPrice * quantity 로 계산 (별도 필드 없음)
+export interface DefectLog {
+    id: string;
+    logDate: string;         // 날짜 (YYYY-MM-DD)
+    productId?: string;      // 카탈로그 제품 참조 (제품 삭제 시 null)
+    productName: string;     // 품목명 스냅샷
+    unitPrice: number;       // 단가(도매가 스냅샷)
+    quantity: number;        // 불량 수량
+    remarks?: string;        // 비고
+    personInCharge?: string; // 담당자
+    createdAt: string;
+}
+
 // 제품 정보 (데이터베이스 정규화용)
 export interface ProductInfo {
     id: string;
