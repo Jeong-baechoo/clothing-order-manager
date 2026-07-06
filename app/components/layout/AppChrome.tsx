@@ -56,7 +56,7 @@ export default function AppChrome({ children }: { children: React.ReactNode }) {
         <>
             {isAdminArea && role === 'admin' && <Navbar />}
             {isBuyerArea && role === 'buyer' && <PortalHeader email={email} />}
-            <main className="container mx-auto px-4 py-8 relative">{children}</main>
+            <main className="w-full max-w-screen-2xl mx-auto px-4 py-8 relative">{children}</main>
         </>
     );
 }

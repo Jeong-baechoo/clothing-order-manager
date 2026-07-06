@@ -19,6 +19,7 @@ export interface Category {
 // 제품 타입 정의
 export interface Product {
     id: string;
+    code?: string; // 표시·편집용 제품 코드 (id는 내부 식별자/FK, code는 사용자 지정)
     name: string;
     defaultPrice: number;
     wholesalePrice?: number;

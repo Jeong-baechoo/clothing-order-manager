@@ -13,6 +13,7 @@ import {
 // Supabase에서 가져온 회사 및 제품 타입 정의
 interface SupabaseProduct {
   id: string;
+  code?: string;
   name: string;
   default_price: number;
   wholesale_price?: number;
@@ -30,6 +31,7 @@ interface SupabaseCompany {
 // 전체 제품 탭용 타입
 interface AllProduct {
   id: string;
+  code?: string;
   name: string;
   defaultPrice: number;
   wholesalePrice?: number;
@@ -49,7 +51,8 @@ export default function CompaniesPage() {
   const [isAddingCompany, setIsAddingCompany] = useState(false);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [newCompany, setNewCompany] = useState<{ name: string }>({ name: '' });
-  const [newProduct, setNewProduct] = useState<{ name: string; defaultPrice: number; wholesalePrice: number; categoryId: number | null }>({
+  const [newProduct, setNewProduct] = useState<{ code: string; name: string; defaultPrice: number; wholesalePrice: number; categoryId: number | null }>({
+    code: '',
     name: '',
     defaultPrice: 0,
     wholesalePrice: 0,
@@ -89,6 +92,7 @@ export default function CompaniesPage() {
             const categoryObj = Array.isArray(cat) ? cat[0] : cat;
             return {
               id: product.id,
+              code: product.code,
               name: product.name,
               wholesalePrice: product.wholesale_price,
               defaultPrice: product.default_price,
@@ -122,6 +126,7 @@ export default function CompaniesPage() {
           const compObj = Array.isArray(comp) ? comp[0] : comp;
           return {
             id: p.id,
+            code: p.code,
             name: p.name,
             defaultPrice: p.default_price,
             wholesalePrice: p.wholesale_price,
@@ -215,6 +220,17 @@ export default function CompaniesPage() {
   };
 
   // ===== 제품 관련 핸들러 =====
+  // 코드 중복 검사 (전 회사 제품 대상, 대소문자 무시). excludeId는 수정 시 자기 자신 제외.
+  const isCodeTaken = (code: string, excludeId?: string) => {
+    const norm = code.trim().toLowerCase();
+    if (!norm) return false;
+    return companies.some(company =>
+      company.products.some(p =>
+        p.id !== excludeId && (p.code ?? p.id).toLowerCase() === norm
+      )
+    );
+  };
+
   const handleAddProduct = async () => {
     if (!selectedCompany) return;
     if (!newProduct.name.trim()) {
@@ -235,8 +251,15 @@ export default function CompaniesPage() {
 
     const companyPrefix = selectedCompany.id.replace('COMP-', 'COMP');
     const productId = `${companyPrefix}-${String(maxProductNumber + 1).padStart(3, '0')}`;
+    // 코드는 사용자 입력값, 비우면 자동 생성값(productId)을 기본으로 사용
+    const code = newProduct.code.trim() || productId;
+    if (isCodeTaken(code)) {
+      alert(`이미 사용 중인 제품코드입니다: ${code}`);
+      return;
+    }
     const product = {
       id: productId,
+      code,
       name: newProduct.name,
       defaultPrice: newProduct.defaultPrice,
       wholesalePrice: newProduct.wholesalePrice,
@@ -253,6 +276,7 @@ export default function CompaniesPage() {
 
         const formattedProduct = {
           id: product.id,
+          code: product.code,
           name: product.name,
           defaultPrice: product.defaultPrice,
           wholesalePrice: product.wholesalePrice,
@@ -272,8 +296,10 @@ export default function CompaniesPage() {
           ...selectedCompany,
           products: [...selectedCompany.products, formattedProduct]
         });
-        setNewProduct({ name: '', defaultPrice: 0, wholesalePrice: 0, categoryId: null });
+        setNewProduct({ code: '', name: '', defaultPrice: 0, wholesalePrice: 0, categoryId: null });
         setIsAddingProduct(false);
+      } else {
+        alert('제품 추가에 실패했습니다. 제품코드가 중복되지 않는지 확인해주세요.');
       }
     } catch (error) {
       console.error('제품 추가 중 오류 발생:', error);
@@ -281,7 +307,7 @@ export default function CompaniesPage() {
     }
   };
 
-  const handleUpdateProduct = async (productId: string, updatedData: { name?: string; defaultPrice?: number; wholesalePrice?: number; categoryId?: number | null }) => {
+  const handleUpdateProduct = async (productId: string, updatedData: { code?: string; name?: string; defaultPrice?: number; wholesalePrice?: number; categoryId?: number | null }) => {
     if (!selectedCompany) return;
 
     try {
@@ -454,7 +480,7 @@ export default function CompaniesPage() {
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto py-8">
+      <div className="w-full py-8">
         <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">회사/제품 관리</h1>
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
           <p className="text-center text-gray-500 dark:text-gray-300">데이터를 불러오는 중...</p>
@@ -464,7 +490,7 @@ export default function CompaniesPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto py-8">
+    <div className="w-full py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">회사/제품 관리</h1>
         <Link href="/" className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
@@ -497,7 +523,7 @@ export default function CompaniesPage() {
 
       {/* 회사 관리 탭 */}
       {activeTab === 'companies' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* 회사 목록 */}
           <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
@@ -558,7 +584,7 @@ export default function CompaniesPage() {
           </div>
 
           {/* 제품 목록 */}
-          <div className="md:col-span-2 bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+          <div className="md:col-span-3 bg-white dark:bg-gray-800 shadow rounded-lg p-6">
             {selectedCompany ? (
               <>
                 <div className="flex justify-between items-center mb-4">
@@ -572,7 +598,14 @@ export default function CompaniesPage() {
 
                 {isAddingProduct && (
                   <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-2">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-2">
+                      <input
+                        type="text"
+                        value={newProduct.code}
+                        onChange={(e) => setNewProduct({ ...newProduct, code: e.target.value })}
+                        placeholder="제품코드 (비우면 자동)"
+                        className="p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-md"
+                      />
                       <input
                         type="text"
                         value={newProduct.name}
@@ -617,7 +650,7 @@ export default function CompaniesPage() {
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                       <thead className="bg-gray-50 dark:bg-gray-700">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">제품 ID</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">제품코드</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">이름</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">카테고리</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">소비자 가격</th>
@@ -628,8 +661,8 @@ export default function CompaniesPage() {
                       <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         {selectedCompany.products.map((product) => (
                           <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{product.id}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{product.name}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" title={`내부 ID: ${product.id}`}>{product.code ?? product.id}</td>
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{product.name}</td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                               <select
                                 value={product.categoryId ?? ''}
@@ -651,8 +684,21 @@ export default function CompaniesPage() {
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-500 dark:text-gray-300">
                               {product.wholesalePrice ? product.wholesalePrice.toLocaleString() + '원' : '-'}
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
-                              <div className="flex justify-end space-x-2">
+                            <td className="px-4 py-3 text-sm text-right">
+                              <div className="flex flex-wrap justify-end gap-x-1 gap-y-1 text-xs">
+                                <button
+                                  onClick={() => {
+                                    const current = product.code ?? product.id;
+                                    const newCode = prompt('새 제품코드를 입력하세요:', current);
+                                    if (newCode === null) return;
+                                    const trimmed = newCode.trim();
+                                    if (!trimmed) { alert('제품코드는 비워둘 수 없습니다.'); return; }
+                                    if (trimmed === current) return;
+                                    if (isCodeTaken(trimmed, product.id)) { alert(`이미 사용 중인 제품코드입니다: ${trimmed}`); return; }
+                                    handleUpdateProduct(product.id, { code: trimmed });
+                                  }}
+                                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 px-2"
+                                >제품코드</button>
                                 <button
                                   onClick={() => {
                                     const newName = prompt('새 제품 이름을 입력하세요:', product.name);
@@ -744,6 +790,7 @@ export default function CompaniesPage() {
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
                   <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">제품코드</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">제품명</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">회사</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">카테고리</th>
@@ -755,6 +802,7 @@ export default function CompaniesPage() {
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {filteredAllProducts.map((product) => (
                     <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" title={`내부 ID: ${product.id}`}>{product.code ?? product.id}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{product.name}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{product.companyName}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm">

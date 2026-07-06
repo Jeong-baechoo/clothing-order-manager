@@ -386,6 +386,7 @@ export async function getCompanies() {
         name,
         products (
           id,
+          code,
           name,
           default_price,
           wholesale_price,
@@ -474,6 +475,7 @@ export async function addProduct(product) {
     .from('products')
     .insert({
       id: product.id,
+      code: product.code || product.id,
       name: product.name,
       default_price: product.defaultPrice,
       wholesale_price: product.wholesalePrice || 0,
@@ -493,7 +495,10 @@ export async function addProduct(product) {
 
 export async function updateProduct(productId, productData) {
   const updateData = {};
-  
+
+  if (productData.code !== undefined) {
+    updateData.code = productData.code;
+  }
   if (productData.name !== undefined) {
     updateData.name = productData.name;
   }
@@ -654,6 +659,7 @@ export async function getProducts(companyId = null) {
       .from('products')
       .select(`
         id,
+        code,
         name,
         default_price,
         wholesale_price,
