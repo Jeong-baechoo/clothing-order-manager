@@ -25,6 +25,13 @@ export const supabase = createClient(supabaseUrl || '', supabaseKey || '', {
   },
 });
 
+// KST 기준 오늘 날짜 (YYYY-MM-DD)
+const kstToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+
+// 입금일(paid_at) 결정: 대기중이면 NULL, 그 외 상태는 기존 값 유지(없으면 오늘)
+const resolvePaidAt = (status, existingPaidAt) =>
+  status === 'pending' ? null : (existingPaidAt || kstToday());
+
 // 주문 관련 함수들
 export async function getOrders() {
   let query = supabase
@@ -106,7 +113,9 @@ export async function addOrder(order) {
         payment_method: order.paymentMethod,
         total_price: order.totalPrice,
         shipping_fee: order.shippingFee || 0,  // 배송비 필드 추가
-        memo: order.memo || null  // 메모 필드 추가
+        memo: order.memo || null,  // 메모 필드 추가
+        paid_at: resolvePaidAt(order.status, null),
+        work_date: order.workDate || null
       })
       .select()
       .single();
@@ -196,7 +205,9 @@ export async function updateOrder(order) {
         total_price: order.totalPrice,
         shipping_fee: order.shippingFee || 0,  // 배송비 필드 추가
         memo: order.memo || null,  // 메모 필드 추가
-        order_date: order.orderDate || existingOrder.order_date // 기존 날짜 유지
+        order_date: order.orderDate || existingOrder.order_date, // 기존 날짜 유지
+        paid_at: resolvePaidAt(order.status, existingOrder.paid_at),
+        work_date: order.workDate || null
       };
 
       console.log('주문 업데이트 데이터:', updateData);
@@ -348,18 +359,31 @@ export async function deleteOrder(orderId) {
   return true;
 }
 
+// 성공 시 갱신된 paid_at(없으면 null)을 담아 반환, 실패 시 { success: false }
 export async function updateOrderStatus(orderId, newStatus) {
+  const { data: existing, error: getError } = await supabase
+    .from('orders')
+    .select('paid_at')
+    .eq('id', orderId)
+    .single();
+
+  if (getError) {
+    console.error('주문 조회 오류:', getError);
+    return { success: false };
+  }
+
+  const paidAt = resolvePaidAt(newStatus, existing?.paid_at);
   const { error } = await supabase
     .from('orders')
-    .update({ status: newStatus })
+    .update({ status: newStatus, paid_at: paidAt })
     .eq('id', orderId);
 
   if (error) {
     console.error('주문 상태 업데이트 오류:', error);
-    return false;
+    return { success: false };
   }
 
-  return true;
+  return { success: true, paidAt };
 }
 
 export async function updateOrderMemo(orderId, memo) {

@@ -7,7 +7,8 @@ import OrderExport from '../components/order/OrderExport';
 import OrderMemo from '../components/order/OrderMemo';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import OrderFormModal from '../components/order/OrderFormModal';
-import { Order, getStatusColor, orderStatusMap } from '../models/orderTypes';
+import WorkCalendar from '../components/order/WorkCalendar';
+import { Order, getStatusColor, orderStatusMap, getDdayRemaining } from '../models/orderTypes';
 import { getOrders, addOrder, updateOrder, deleteOrder, updateOrderStatus, updateOrderMemo } from '../lib/supabase';
 
 // Supabase에서 가져온 주문 항목의 타입 정의 (정규화된 스키마)
@@ -47,6 +48,46 @@ interface ErrorObject {
     [key: string]: unknown; // 다른 속성들도 허용
 }
 
+// Supabase 주문 행 → 애플리케이션 Order 변환
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const formatOrder = (order: any): Order => ({
+    id: order.id,
+    customerName: order.customer_name,
+    phone: order.phone,
+    address: order.address,
+    status: order.status,
+    orderDate: order.order_date,
+    paymentMethod: order.payment_method,
+    totalPrice: order.total_price,
+    shippingFee: order.shipping_fee || 0,
+    memo: order.memo || '',
+    paidAt: order.paid_at || undefined,
+    workDate: order.work_date || undefined,
+    items: order.items.map((item: SupabaseOrderItem) => ({
+        id: `ITEM-${item.id}`,
+        product: item.product?.name || item.product_name || '알 수 없는 제품', // 정규화된 제품명 처리
+        productId: item.product_id || item.product?.id, // 제품 ID 저장
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color,
+        price: item.price,
+        smallPrintingQuantity: item.small_printing_quantity || 0,
+        largePrintingQuantity: item.large_printing_quantity || 0,
+        extraLargePrintingQuantity: item.extra_large_printing_quantity || 0,
+        extraLargePrintingPrice: item.extra_large_printing_price || 0,
+        designWorkQuantity: item.design_work_quantity || 0,
+        designWorkPrice: item.design_work_price || 0,
+        printingOption: (item.printing_option || null) as Order['items'][number]['printingOption'],
+        smallPrintCount: item.small_print_count || 0,
+        mediumPrintCount: item.medium_print_count || 0,
+        largePrintCount: item.large_print_count || 0,
+        extraLargePrintCount: item.extra_large_print_count || 0,
+        printingConfigs: item.printing_configs ? (typeof item.printing_configs === 'string' ? JSON.parse(item.printing_configs) : item.printing_configs) : undefined,
+        remarks: item.remarks || '-',
+        productInfo: item.product?.id ? item.product : undefined
+    }))
+});
+
 const OrdersPage: React.FC = () => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -58,6 +99,7 @@ const OrdersPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [showCompleted, setShowCompleted] = useState(false);
     const [showHold, setShowHold] = useState(false);
+    const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
 
     // 삭제 확인 대화상자 상태
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -76,41 +118,7 @@ const OrdersPage: React.FC = () => {
                 console.log('첫 번째 주문 원본 데이터:', ordersData[0]); // 디버깅용 로그
                 if (ordersData.length > 0) {
                     // Supabase에서 받은 데이터를 애플리케이션 형식으로 변환
-                    const formattedOrders = ordersData.map(order => ({
-                        id: order.id,
-                        customerName: order.customer_name,
-                        phone: order.phone,
-                        address: order.address,
-                        status: order.status,
-                        orderDate: order.order_date,
-                        paymentMethod: order.payment_method,
-                        totalPrice: order.total_price,
-                        shippingFee: order.shipping_fee || 0,  // 배송비 필드 추가
-                        memo: order.memo || '',  // 메모 필드 추가
-                        items: order.items.map((item: SupabaseOrderItem) => ({
-                            id: `ITEM-${item.id}`,
-                            product: item.product?.name || item.product_name || '알 수 없는 제품', // 정규화된 제품명 처리
-                            productId: item.product_id || item.product?.id, // 제품 ID 저장
-                            quantity: item.quantity,
-                            size: item.size,
-                            color: item.color,
-                            price: item.price,
-                            smallPrintingQuantity: item.small_printing_quantity || 0,
-                            largePrintingQuantity: item.large_printing_quantity || 0,
-                            extraLargePrintingQuantity: item.extra_large_printing_quantity || 0,
-                            extraLargePrintingPrice: item.extra_large_printing_price || 0,
-                            designWorkQuantity: item.design_work_quantity || 0,
-                            designWorkPrice: item.design_work_price || 0,
-                            printingOption: item.printing_option || null,
-                            smallPrintCount: item.small_print_count || 0,
-                            mediumPrintCount: item.medium_print_count || 0,
-                            largePrintCount: item.large_print_count || 0,
-                            extraLargePrintCount: item.extra_large_print_count || 0,
-                            printingConfigs: item.printing_configs ? (typeof item.printing_configs === 'string' ? JSON.parse(item.printing_configs) : item.printing_configs) : undefined,
-                            remarks: item.remarks || '-',
-                            productInfo: item.product?.id ? item.product : undefined
-                        }))
-                    }));
+                    const formattedOrders = ordersData.map(formatOrder);
                     console.log('첫 번째 변환된 주문:', formattedOrders[0]);
                     console.log('첫 번째 주문 아이템 printingConfigs:', formattedOrders[0]?.items?.[0]?.printingConfigs);
                     setOrders(formattedOrders);
@@ -195,41 +203,7 @@ const OrdersPage: React.FC = () => {
             if (result.success) {
                 // DB에서 최신 데이터 다시 불러오기
                 const updatedOrders = await getOrders();
-                const formattedOrders = updatedOrders.map(order => ({
-                    id: order.id,
-                    customerName: order.customer_name,
-                    phone: order.phone,
-                    address: order.address,
-                    status: order.status,
-                    orderDate: order.order_date,
-                    paymentMethod: order.payment_method,
-                    totalPrice: order.total_price,
-                    shippingFee: order.shipping_fee || 0,
-                    memo: order.memo || '',
-                    items: order.items.map((item: SupabaseOrderItem) => ({
-                        id: `ITEM-${item.id}`,
-                        product: item.product?.name || item.product_name || '알 수 없는 제품',
-                        productId: item.product_id || item.product?.id,
-                        quantity: item.quantity,
-                        size: item.size,
-                        color: item.color,
-                        price: item.price,
-                        smallPrintingQuantity: item.small_printing_quantity || 0,
-                        largePrintingQuantity: item.large_printing_quantity || 0,
-                        extraLargePrintingQuantity: item.extra_large_printing_quantity || 0,
-                        extraLargePrintingPrice: item.extra_large_printing_price || 0,
-                        designWorkQuantity: item.design_work_quantity || 0,
-                        designWorkPrice: item.design_work_price || 0,
-                        printingOption: item.printing_option || null,
-                        smallPrintCount: item.small_print_count || 0,
-                        mediumPrintCount: item.medium_print_count || 0,
-                        largePrintCount: item.large_print_count || 0,
-                        extraLargePrintCount: item.extra_large_print_count || 0,
-                        printingConfigs: item.printing_configs ? (typeof item.printing_configs === 'string' ? JSON.parse(item.printing_configs) : item.printing_configs) : undefined,
-                        remarks: item.remarks || '-',
-                        productInfo: item.product?.id ? item.product : undefined
-                    }))
-                }));
+                const formattedOrders = updatedOrders.map(formatOrder);
                 setOrders(formattedOrders);
                 alert('주문이 성공적으로 추가되었습니다.');
             } else {
@@ -271,41 +245,7 @@ const OrdersPage: React.FC = () => {
             if (result.success) {
                 // DB에서 최신 데이터 다시 불러오기
                 const updatedOrders = await getOrders();
-                const formattedOrders = updatedOrders.map(order => ({
-                    id: order.id,
-                    customerName: order.customer_name,
-                    phone: order.phone,
-                    address: order.address,
-                    status: order.status,
-                    orderDate: order.order_date,
-                    paymentMethod: order.payment_method,
-                    totalPrice: order.total_price,
-                    shippingFee: order.shipping_fee || 0,
-                    memo: order.memo || '',
-                    items: order.items.map((item: SupabaseOrderItem) => ({
-                        id: `ITEM-${item.id}`,
-                        product: item.product?.name || item.product_name || '알 수 없는 제품',
-                        productId: item.product_id || item.product?.id,
-                        quantity: item.quantity,
-                        size: item.size,
-                        color: item.color,
-                        price: item.price,
-                        smallPrintingQuantity: item.small_printing_quantity || 0,
-                        largePrintingQuantity: item.large_printing_quantity || 0,
-                        extraLargePrintingQuantity: item.extra_large_printing_quantity || 0,
-                        extraLargePrintingPrice: item.extra_large_printing_price || 0,
-                        designWorkQuantity: item.design_work_quantity || 0,
-                        designWorkPrice: item.design_work_price || 0,
-                        printingOption: item.printing_option || null,
-                        smallPrintCount: item.small_print_count || 0,
-                        mediumPrintCount: item.medium_print_count || 0,
-                        largePrintCount: item.large_print_count || 0,
-                        extraLargePrintCount: item.extra_large_print_count || 0,
-                        printingConfigs: item.printing_configs ? (typeof item.printing_configs === 'string' ? JSON.parse(item.printing_configs) : item.printing_configs) : undefined,
-                        remarks: item.remarks || '-',
-                        productInfo: item.product?.id ? item.product : undefined
-                    }))
-                }));
+                const formattedOrders = updatedOrders.map(formatOrder);
                 setOrders(formattedOrders);
                 // 성공 메시지 표시
                 alert('주문이 성공적으로 업데이트되었습니다.');
@@ -334,10 +274,14 @@ const OrdersPage: React.FC = () => {
     // 주문 상태 변경
     const handleStatusChange = async (id: string, newStatus: Order['status']) => {
         try {
-            await updateOrderStatus(id, newStatus);
+            const result = await updateOrderStatus(id, newStatus);
+            if (!result.success) {
+                alert('주문 상태 변경에 실패했습니다.');
+                return;
+            }
             setOrders(
                 orders.map((order) =>
-                    order.id === id ? { ...order, status: newStatus } : order
+                    order.id === id ? { ...order, status: newStatus, paidAt: result.paidAt || undefined } : order
                 )
             );
         } catch (error) {
@@ -453,12 +397,27 @@ const OrdersPage: React.FC = () => {
 
             <div className="mb-8 flex justify-between items-center">
                 <h1 className="text-2xl font-bold">주문 관리</h1>
+                <div className="flex items-center gap-3">
+                <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden">
+                    {(['list', 'calendar'] as const).map(mode => (
+                        <button
+                            key={mode}
+                            onClick={() => setViewMode(mode)}
+                            className={`px-4 py-2 text-sm font-medium ${viewMode === mode
+                                ? 'bg-indigo-600 text-white'
+                                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                        >
+                            {mode === 'list' ? '목록' : '작업 캘린더'}
+                        </button>
+                    ))}
+                </div>
                 <button
                     onClick={handleAddNewOrderClick}
                     className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
                 >
                     새 주문 추가
                 </button>
+                </div>
             </div>
 
             {isFormVisible && (
@@ -470,6 +429,9 @@ const OrdersPage: React.FC = () => {
                 />
             )}
 
+            {viewMode === 'calendar' ? (
+                <WorkCalendar orders={orders} onSelectOrder={setSelectedOrder} />
+            ) : (
             <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
                 <div className="p-4 border-b border-gray-200 flex flex-col md:flex-row justify-between space-y-4 md:space-y-0">
                     <div className="w-full md:w-1/3">
@@ -603,20 +565,18 @@ const OrdersPage: React.FC = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                             <div className="flex items-center gap-2">
                                                 <span>{order.orderDate}</span>
-                                                {order.status !== 'completed' && order.status !== 'hold' && (() => {
-                                                    const orderDate = new Date(order.orderDate);
-                                                    const today = new Date();
-                                                    today.setHours(0, 0, 0, 0);
-                                                    orderDate.setHours(0, 0, 0, 0);
-                                                    const deadline = new Date(orderDate);
-                                                    deadline.setDate(deadline.getDate() + 5);
-                                                    const remaining = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                                                {(() => {
+                                                    const remaining = getDdayRemaining(order);
+                                                    if (remaining === null) return null;
                                                     const label = remaining > 0 ? `D-${remaining}` : remaining === 0 ? 'D-Day' : `D+${Math.abs(remaining)}`;
                                                     const color = remaining > 0
                                                         ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
                                                         : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
                                                     return (
-                                                        <span className={`px-1.5 py-0.5 text-xs font-semibold rounded ${color}`}>
+                                                        <span
+                                                            className={`px-1.5 py-0.5 text-xs font-semibold rounded ${color}`}
+                                                            title={`입금일 ${order.paidAt || order.orderDate} 기준`}
+                                                        >
                                                             {label}
                                                         </span>
                                                     );
@@ -682,6 +642,7 @@ const OrdersPage: React.FC = () => {
                     </table>
                 </div>
             </div>
+            )}
         </div>
     );
 };

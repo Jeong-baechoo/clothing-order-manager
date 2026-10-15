@@ -959,7 +959,7 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                 </h3>
                             </div>
                             <div className="p-6">
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                             결제 방법
@@ -996,6 +996,18 @@ export default function OrderForm({ onSubmit, onCancel, initialData, isEdit = fa
                                             <option value="priority">우선작업</option>
                                             <option value="completed">완료</option>
                                         </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                            작업일 <span className="font-normal text-gray-400">(작업 캘린더 표시)</span>
+                                        </label>
+                                        <input
+                                            type="date"
+                                            name="workDate"
+                                            value={orderData.workDate || ''}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
+                                        />
                                     </div>
                                 </div>
                             </div>

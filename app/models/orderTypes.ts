@@ -206,7 +206,23 @@ export interface Order {
     totalPrice: number;
     shippingFee?: number;  // 배송비 필드 추가
     memo?: string;  // 메모 필드 추가
+    paidAt?: string;   // 입금일 (YYYY-MM-DD, 대기중 → 다른 상태로 바뀐 날). D-day 기준
+    workDate?: string; // 작업일 (YYYY-MM-DD). 작업 캘린더 표시용
 }
+
+// D-day 마감까지 일수 (입금일 + 5일). 대기중/보류/완료는 null.
+// paidAt 이 없는 기존 주문은 주문일로 대체.
+export const DDAY_DEADLINE_DAYS = 5;
+export const getDdayRemaining = (order: Pick<Order, 'status' | 'paidAt' | 'orderDate'>): number | null => {
+    if (order.status === 'pending' || order.status === 'hold' || order.status === 'completed') return null;
+    const base = order.paidAt || order.orderDate;
+    if (!base) return null;
+    const [y, m, d] = base.slice(0, 10).split('-').map(Number);
+    const deadline = Date.UTC(y, m - 1, d + DDAY_DEADLINE_DAYS);
+    const [ty, tm, td] = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' }).split('-').map(Number);
+    const today = Date.UTC(ty, tm - 1, td);
+    return Math.round((deadline - today) / (1000 * 60 * 60 * 24));
+};
 
 // 주문 상태 한글 표시
 export const orderStatusMap = {
